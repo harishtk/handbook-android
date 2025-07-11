@@ -1,0 +1,133 @@
+<resources>
+    <string name="app_name">Handbook</string>
+
+    <!-- Home -->
+    <string name="home">Home</string>
+    <string name="insights">Insights</string>
+    <string name="create">Create</string>
+    <string name="profile">Profile</string>
+    <string name="admin">Admin</string>
+
+    <string name="my_store">My Store</string>
+    <string name="website">Website</string>
+    <string name="customers">Customers</string>
+    <string name="campaigns">Campaigns</string>
+    <string name="orders">Orders</string>
+    <string name="offers">Offers</string>
+    <string name="revenue">Revenue</string>
+    <string name="analytics">Analytics</string>
+    <string name="support">Support</string>
+    <string name="settings">Settings</string>
+    <string name="search">Search</string>
+
+    <string name="no_more_results_des">No more results found for your search. Please try refining your search terms.</string>
+    <!-- END - Home -->
+
+    <!-- Settings -->
+    <string name="top_app_bar_action_icon_description">Settings</string>
+    <string name="top_app_bar_navigation_icon_description">Search</string>
+    <string name="settings_title">Settings</string>
+    <string name="loading">Loading…</string>
+    <string name="privacy_policy">Privacy policy</string>
+    <string name="licenses">Licenses</string>
+    <string name="brand_guidelines">Brand Guidelines</string>
+    <string name="feedback">Feedback</string>
+    <string name="theme">Theme</string>
+    <string name="brand_default">Default</string>
+    <string name="brand_android">Android</string>
+    <string name="dark_mode_preference">Dark mode preference</string>
+    <string name="dark_mode_config_system_default">System default</string>
+    <string name="dark_mode_config_light">Light</string>
+    <string name="dark_mode_config_dark">Dark</string>
+    <string name="dynamic_color_preference">Use Dynamic Color</string>
+    <string name="dynamic_color_yes">Yes</string>
+    <string name="dynamic_color_no">No</string>
+    <string name="dismiss_dialog_button_text">OK</string>
+    <string name="terms_and_conditions"><![CDATA[Terms & Conditions]]></string>
+    <string name="your_pin_code">You pin code: %1$s</string>
+    <string name="made_with_from">Made with ❤ ️from 🇮🇳</string>
+    <string name="version_info" translatable="false"><![CDATA[%1$s \u2022 %2$s]]></string>
+    <string name="please_wait">Please wait…</string>
+    <string name="label_settings">Settings</string>
+    <!-- END - Settings -->
+
+    <!-- Onboard -->
+    <string name="by_signin_up_you_agree_to_our">I accept the </string>
+    <string name="terms_and_policy_text">I accept the %1$s and %2$s</string>
+    <string name="please_check_your_number">Please check your number</string>
+    <string name="enter_a_valid_phone">Enter a valid phone number</string>
+    <string name="enter_a_valid_otp">Enter a valid OTP</string>
+    <string name="read_and_accept_terms">Please read and accept the Terms and Conditions and Privacy Policy</string>
+
+    <string name="otp_sent_successfully">OTP sent successfully</string>
+    <string name="otp_resent_successfully">OTP resent successfully!</string>
+
+    <string name="resend_otp_in">Didn\'t receive OTP? Resend in %1$s</string>
+    <string name="resend_otp">Resend OTP</string>
+    <string name="sent_to">Sent to +%1$s%2$s</string>
+
+    <string name="welcome_to__app">Welcome to %1$s</string>
+    <string name="country_restriction_description">Welcome to %1$s, Currently we\'re providing service to India. Soon we\’re going to launch through world wide. We appreciate your patience.</string>
+    <string name="max_otp_limit_description">You have reached maximum OTP request. Please try again after sometime.</string>
+    <string name="deleted_account_description_1">Your account has been scheduled for deletion. If you proceed with this number, your account will be restored. Continue with…</string>
+    <string name="dear_user">Dear user</string>
+    <string name="label_ok">OK</string>
+    <string name="label_yes">Yes</string>
+    <string name="label_no">No</string>
+    <string name="label_cancel">Cancel</string>
+
+    <string name="get_otp">Get OTP</string>
+    <string name="please_enter_a_otp">Please enter a OTP</string>
+    <string name="otp_contains_at_least_6_digits">OTP contains at least 6 digits</string>
+
+    <string name="set_up_your_store">Setup Your Store</string>
+    <string name="add_products">Add Products</string>
+    <string name="add_bank_details">Add Bank Details</string>
+    <string name="launch">Launch</string>
+    <!-- END - Onboard -->
+
+    <!-- Permissions -->
+    <string name="photo_picker_long_press_hint">ℹ️ Long press to select multiple photos!</string>
+    <string name="unable_to_perform_this_action">Unable to perform this action!</string>
+
+    <string name="permissions_required">Permissions Required</string>
+    <string name="files_permission_des">To use this feature, we request you to allow Handbook to access your media files. We assure you that this will be safe.</string>
+    <string name="files_permission_rationale_des">To use this feature, we request you to allow Handbook to access your media files. We assure you that this will be safe.</string>
+
+    <string name="camera_permission_des_short">Camera permission is required to take a photo</string>
+    <string name="camera_permission_des">To use this feature, we request you to allow Handbook to access your camera. We assure you that this will be safe.</string>
+    <string name="camera_permission_rationale_des">To use this feature, we request you to allow Handbook to access your camera. We assure you that this will be safe.</string>
+    <!-- END - Permissions -->
+
+    <!-- Notification channel based -->
+    <string name="general_notifications_channel_id">shops_general_alerts</string>
+    <string name="title_general_notifications">General Alerts</string>
+    <string name="desc_general_notifications">All alerts from Handbook Seller App</string>
+    <!-- END - Notification channel based -->
+
+    <string name="username_with_prefix"><![CDATA[\@%1$s]]></string>
+
+    <string name="server_maintenance_title">We\'re Cooking Features!</string>
+    <string name="server_maintenance_des_1">We apologize for the inconvenience, our site is currently undergoing maintenance.</string>
+
+    <!-- Force update -->
+    <string name="new_update">New Update</string>
+    <string name="update">Update</string>
+    <string name="remind_me_later">Remind me later</string>
+    <string name="app_update_des_1">Handbook has a new update available! Kindly update to continue enjoying hassle free shopping.</string>
+    <string name="force_update_title">Get more with the new update</string>
+    <string name="force_update_des_1">A new update has been released. Kindly update now to experience the new version.</string>
+    <string name="update_now">Update Now</string>
+    <string name="new_version_available">A new version of Handbook is available!</string>
+    <!-- END - Force update -->
+
+    <string name="something_went_wrong_try_later">Something went wrong! try again later.</string>
+    <string name="no_internet_connection">No Internet Connection!</string>
+    <string name="check_your_internet">Please check your internet connection!</string>
+    <string name="check_your_internet_with_emoji">⚠️ Please check your internet connection!</string>
+    <string name="you_are_not_connected_to_the_internet">You are not connected to the internet</string>
+    <string name="no_internet_des_1">Uh-oh! It looks like you\'re not connected to the internet right now. Please check your internet connection!</string>
+    <string name="unknown_error">Unknown Error</string>
+    <string name="enter_a_valid_username">Enter a valid username</string>
+
+</resources>
