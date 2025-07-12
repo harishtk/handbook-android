@@ -72,6 +72,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import com.handbook.app.ObserverAsEvents
 import com.handbook.app.SharedViewModel
+import com.handbook.app.core.designsystem.component.UserAvatar
 import com.handbook.app.feature.home.domain.model.Post
 import com.handbook.app.feature.home.domain.model.UserSummary
 import com.handbook.app.feature.home.presentation.profile.FullScreenErrorLayout
@@ -365,41 +366,8 @@ private fun PostCard(
 }
 
 @Composable
-fun UserAvatar(
-    modifier: Modifier = Modifier,
-    profile: UserSummary,
-) {
-    Box(
-        modifier = modifier
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.primaryContainer)
-            .border(1.dp, MaterialTheme.colorScheme.primary, CircleShape),
-        contentAlignment = Alignment.Center
-    ) {
-        if (!profile.profilePictureId.isBlank()) {
-            // In a real app, you'd use a library like Coil or Glide here
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)),
-            )
-//            Image(
-//                painter = painterResource(id = R.drawable.ic_launcher_background), // Placeholder
-//                contentDescription = "Profile Image",
-//                contentScale = ContentScale.Crop,
-//                modifier = Modifier.fillMaxSize()
-//            )
-        } else {
-            val initials = profile.displayName.split(" ")
-                .take(2)
-                .mapNotNull { it.firstOrNull()?.uppercaseChar() }
-                .joinToString("")
-            Text(
-                text = initials.ifEmpty { "?" },
-                style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onPrimaryContainer)
-            )
-        }
-    }
+fun UserAvatar(modifier: Modifier, profile: UserSummary) {
+    TODO("Not yet implemented")
 }
 
 @Composable

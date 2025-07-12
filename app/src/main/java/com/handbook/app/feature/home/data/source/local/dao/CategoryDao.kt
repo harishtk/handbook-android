@@ -2,6 +2,7 @@ package com.handbook.app.feature.home.data.source.local.dao
 
 import androidx.room.Dao
 import androidx.room.Delete
+import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Upsert
 import com.handbook.app.feature.home.data.source.local.entity.CategoryEntity
@@ -33,6 +34,9 @@ interface CategoryDao {
     """
     )
     fun observeCategory(id: Long): Flow<CategoryEntity?>
+
+    @Insert
+    fun insert(category: CategoryEntity): Long
 
     @Upsert
     fun upsertAll(categories: List<CategoryEntity>)

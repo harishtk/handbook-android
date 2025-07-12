@@ -4,6 +4,8 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
+import com.handbook.app.core.di.AiaDispatchers
+import com.handbook.app.core.di.Dispatcher
 import com.handbook.app.core.util.Result
 import com.handbook.app.feature.home.data.source.local.dao.AccountEntryDao
 import com.handbook.app.feature.home.data.source.local.dao.CategoryDao
@@ -28,6 +30,7 @@ class LocalAccountsRepository @Inject constructor(
     private val accountsDao: AccountEntryDao,
     private val categoriesDao: CategoryDao,
     private val partiesDao: PartyDao,
+    @Dispatcher(AiaDispatchers.Io)
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : AccountsRepository {
     override fun getAccountsStream(): Flow<List<AccountEntryWithDetailsEntity>> {
@@ -92,10 +95,25 @@ class LocalAccountsRepository @Inject constructor(
             .mapNotNull { it?.toParty() }
     }
 
+    override suspend fun getParty(partyId: Long): Result<Party> {
+        return withContext(dispatcher) {
+            try {
+                val party = partiesDao.getParty(partyId)?.toParty()
+                if (party != null) {
+                    Result.Success(party)
+                } else {
+                    Result.Error(Exception("Party not found"))
+                }
+            } catch (e: Exception) {
+                Result.Error(e)
+            }
+        }
+    }
+
     override suspend fun addParty(party: Party): Result<Long> {
         return withContext(dispatcher) {
             try {
-                partiesDao.upsertAll(listOf(party).map(Party::asEntity))
+                partiesDao.insert(party.asEntity())
                 Result.Success(0)
             } catch (e: Exception) {
                 Result.Error(e)

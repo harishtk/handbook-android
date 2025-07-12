@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.kotlin)
     alias(libs.plugins.compose)
     alias(libs.plugins.android.nav.safeargs)
+    alias(libs.plugins.kotlin.parcelize)
 }
 
 object Ext {

@@ -18,10 +18,9 @@ import androidx.navigation.navigation
 import com.handbook.app.Constant
 import com.handbook.app.SharedViewModel
 import com.handbook.app.feature.home.presentation.create.CreateRoute
-import com.handbook.app.feature.home.presentation.create.WritePostRoute
 import com.handbook.app.feature.home.presentation.landing.HomeRoute
-import com.handbook.app.feature.home.presentation.notification.NotificationRoute
-import com.handbook.app.feature.home.presentation.post.PostDetailRoute
+import com.handbook.app.feature.home.presentation.party.AllPartiesRoute
+import com.handbook.app.feature.home.presentation.party.addparty.AddPartyRoute
 import com.handbook.app.feature.home.presentation.profile.ProfileRoute
 import com.handbook.app.feature.home.presentation.search.SearchRoute
 import com.handbook.app.feature.home.presentation.settings.SettingsRoute
@@ -41,6 +40,9 @@ const val USER_ID_ARG = "userId"
 const val profileNavigationRoute = "profile_route/{$USER_ID_ARG}"
 const val searchNavigationRoute = "search_route"
 const val notificationsNavigationRoute = "notification_route"
+const val allPartiesNavigationRoute = "all_parties_route"
+const val PARTY_ID_ARG = "partyId"
+const val addPartyNavigationRoute = "add_party_route/{$PARTY_ID_ARG}"
 
 const val webPageNavigationRoute = "web_page_route?url={url}"
 const val settingsNavigationRoute = "settings_route"
@@ -74,6 +76,19 @@ fun NavController.navigateToNotifications(
     navOptions: NavOptions? = null
 ) {
     this.navigate(notificationsNavigationRoute, navOptions)
+}
+
+fun NavController.navigateToAllParties(
+    navOptions: NavOptions? = null
+) {
+    this.navigate(allPartiesNavigationRoute, navOptions)
+}
+
+fun NavController.navigateToAddParty(
+    partyId: String? = null,
+    navOptions: NavOptions? = null
+) {
+    this.navigate(addPartyNavigationRoute.replace("{$PARTY_ID_ARG}", partyId ?: ""), navOptions)
 }
 
 fun NavController.navigateToWebPage(url: String, navOptions: NavOptions? = null) {
@@ -188,8 +203,37 @@ fun NavGraphBuilder.homeGraph(
                 onNavigateToPost = { postId ->
                 },
                 onNavigateToNotifications = {
-                    navController.navigateToNotifications()
+                    // navController.navigateToNotifications()
+                    navController.navigateToAllParties()
                 }
+            )
+        }
+
+        composable(
+            route = allPartiesNavigationRoute,
+            /* TODO: add deep links and other args here */
+        ) {
+            val sharedViewModel = it.sharedViewModel<SharedViewModel>(navController)
+            AllPartiesRoute(
+                onNavUp = { navController.navigateUp() },
+                onAddPartyRequest = { partyId ->
+                    navController.navigateToAddParty(partyId = partyId?.toString())
+                }
+            )
+        }
+
+        composable(
+            route = addPartyNavigationRoute,
+            arguments = listOf(
+                navArgument(PARTY_ID_ARG) { type = NavType.StringType }
+            ),
+            deepLinks = listOf(navDeepLink {
+                uriPattern = "seller://party/{$PARTY_ID_ARG}"
+            })
+        ) {
+            val sharedViewModel = it.sharedViewModel<SharedViewModel>(navController)
+            AddPartyRoute(
+                onNextPage = { navController.navigateUp() },
             )
         }
 

@@ -11,8 +11,8 @@ data class UserData(
     val serverUnderMaintenance: Boolean = false,
     val lastGreetedTime: Long = 0,
     val shouldShowAppRating: Boolean = false,
-    val themeBrand: ThemeBrand = ThemeBrand.DEFAULT,
+    val themeBrand: ThemeBrand = ThemeBrand.ANDROID,
     val darkThemeConfig: DarkThemeConfig = DarkThemeConfig.FOLLOW_SYSTEM,
-    val useDynamicColor: Boolean = true,
+    val useDynamicColor: Boolean = false,
     val isAppRatingShownAtLeastOnce: Boolean = false,
 )

@@ -31,6 +31,7 @@ interface AccountsRepository {
     fun getPartiesStream(): Flow<List<Party>>
     fun getPartyStream(id: Long): Flow<Party?>
 
+    suspend fun getParty(partyId: Long): Result<Party>
     suspend fun addParty(party: Party): Result<Long>
     suspend fun updateParty(party: Party): Result<Party>
     suspend fun deleteParty(party: Party): Result<Unit>

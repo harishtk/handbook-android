@@ -1,4 +1,4 @@
-package com.handbook.app.feature.home.presentation.party
+package com.handbook.app.feature.home.presentation.party.components
 
 import com.handbook.app.core.designsystem.component.text.TextFieldState
 import com.handbook.app.core.designsystem.component.text.textFieldStateSaver

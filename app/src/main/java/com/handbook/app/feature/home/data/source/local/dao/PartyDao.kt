@@ -3,6 +3,7 @@ package com.handbook.app.feature.home.data.source.local.dao
 import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Delete
+import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Upsert
 import com.handbook.app.feature.home.data.source.local.entity.PartyEntity
@@ -42,6 +43,9 @@ interface PartyDao {
         WHERE ${PartyTable.Columns.ID} = :id
     """)
     fun observeParty(id: Long): Flow<PartyEntity?>
+
+    @Upsert
+    fun insert(party: PartyEntity): Long
 
     @Upsert
     fun upsertAll(parties: List<PartyEntity>)

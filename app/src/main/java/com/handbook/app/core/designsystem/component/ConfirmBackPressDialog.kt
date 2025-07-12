@@ -39,15 +39,16 @@ internal fun ConfirmBackPressDialog(
                 text = description,
                 style = MaterialTheme.typography.bodyMedium
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.surface,
     )
 
 }
 
-@Preview(group = "popup", showBackground = true)
+@ThemePreviews
 @Composable
 private fun ConfirmBackPressDialogPreview() {
-    HandbookTheme {
+    HandbookTheme(androidTheme = true) {
         ConfirmBackPressDialog(
             description = "Confirm go back?",
             onDismiss = {}

@@ -89,7 +89,7 @@ class AllPartiesViewModel @Inject constructor(
     private fun onUiAction(action: AllPartiesUiAction) {
         when (action) {
             is AllPartiesUiAction.OnItemClick -> {
-
+                sendEvent(AllPartiesUiEvent.NavigateToEditParty(action.party.id))
             }
             is AllPartiesUiAction.OnTypingQuery -> {
                 viewModelScope.launch { _actionStream.emit(action) }
@@ -130,6 +130,7 @@ sealed interface AllPartiesUiAction {
 sealed interface AllPartiesUiEvent {
     data class ShowToast(val message: UiText) : AllPartiesUiEvent
     data class ShowSnack(val message: UiText) : AllPartiesUiEvent
+    data class NavigateToEditParty(val partyId: Long) : AllPartiesUiEvent
 }
 
 sealed interface PartiesUiState {

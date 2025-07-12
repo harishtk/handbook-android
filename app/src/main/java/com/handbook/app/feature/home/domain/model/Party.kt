@@ -13,12 +13,13 @@ data class Party(
 ) {
     companion object {
         fun create(
+            id: Long = 0,
             name: String,
             contactNumber: String,
             description: String? = null,
             address: String? = null,
         ) = Party(
-            id = 0,
+            id = id,
             name = name,
             contactNumber = contactNumber,
             description = description,

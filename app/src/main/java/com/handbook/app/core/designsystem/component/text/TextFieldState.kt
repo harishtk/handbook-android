@@ -39,6 +39,11 @@ open class TextFieldState(
             null
         }
     }
+
+    fun updateText(newText: String) {
+        text = newText
+        enableShowErrors()
+    }
 }
 
 fun textFieldStateSaver(state: TextFieldState) = listSaver<TextFieldState, Any>(

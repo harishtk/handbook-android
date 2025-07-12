@@ -31,6 +31,7 @@ plugins {
     alias(libs.plugins.kotlin) apply(false)
     alias(libs.plugins.compose) apply(false)
     alias(libs.plugins.dokka) apply(false)
+    alias(libs.plugins.kotlin.parcelize) apply(false)
 }
 
 tasks.register<Delete>("clean") {

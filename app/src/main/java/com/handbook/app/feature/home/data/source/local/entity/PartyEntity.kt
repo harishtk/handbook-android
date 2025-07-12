@@ -47,12 +47,12 @@ fun PartyEntity.toParty(): Party {
 fun Party.asEntity(): PartyEntity {
     return PartyEntity(
         name = name,
-        _id = id,
+        _id = if (id == 0L) null else id,
         contactNumber = contactNumber,
         description = this@asEntity.description,
         address = this@asEntity.address,
         updatedAt = this@asEntity.updatedAt,
-        createdAt = this@asEntity.createdAt
+        createdAt = if (id == 0L) Instant.now().toEpochMilli() else this@asEntity.createdAt
     )
 }
 
