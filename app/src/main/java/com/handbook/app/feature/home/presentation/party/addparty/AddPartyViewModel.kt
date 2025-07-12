@@ -14,8 +14,10 @@ import com.handbook.app.feature.home.domain.repository.AccountsRepository
 import com.handbook.app.ifDebug
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -41,9 +43,13 @@ class AddPartyViewModel @Inject constructor(
         )
     val partyId = savedStateHandle.getStateFlow("partyId", "")
 
+    private val _uiEvent = MutableSharedFlow<AddPartyUiEvent>()
+    val uiEvent = _uiEvent.asSharedFlow()
+
     val accept: (AddPartyUiAction) -> Unit
 
     private var addPartyJob: Job? = null
+    private var deletePartyJob: Job? = null
 
     init {
         accept = { uiAction -> onUiAction(uiAction) }
@@ -101,6 +107,10 @@ class AddPartyViewModel @Inject constructor(
                 }
                 validate()
             }
+
+            AddPartyUiAction.DeleteParty -> {
+                deleteParty()
+            }
         }
     }
 
@@ -151,7 +161,36 @@ class AddPartyViewModel @Inject constructor(
                 },
             )
         }
+    }
 
+    private fun deleteParty() {
+        val partyId = viewModelState.value.partyId ?: return
+        deletePartyJob = viewModelScope.launch {
+            accountsRepository.getParty(partyId).fold(
+                onFailure = { exception ->
+                    Timber.e(exception)
+                    val errorMessage = ErrorMessage(
+                        id = 0,
+                        exception = exception,
+                        message = UiText.somethingWentWrong
+                    )
+                    viewModelState.update { state ->
+                        state.copy(
+                            errorMessage = errorMessage
+                        )
+                    }
+                },
+                onSuccess = { party ->
+                    accountsRepository.deleteParty(partyId).fold(
+                        onFailure = {},
+                        onSuccess = {
+                            sendEvent(AddPartyUiEvent.ShowToast(UiText.DynamicString("Party deleted")))
+                            sendEvent(AddPartyUiEvent.OnNavUp)
+                        }
+                    )
+                }
+            )
+        }
     }
 
     private fun setLoading(
@@ -161,6 +200,11 @@ class AddPartyViewModel @Inject constructor(
         val newLoadState = viewModelState.value.loadState.modifyState(loadType, loadState)
         viewModelState.update { state -> state.copy(loadState = newLoadState) }
     }
+
+    private fun sendEvent(event: AddPartyUiEvent) {
+        viewModelScope.launch { _uiEvent.emit(event) }
+    }
+
 }
 
 private data class ViewModelState(
@@ -216,4 +260,10 @@ sealed interface AddPartyUiAction {
     ) : AddPartyUiAction
 
     data object Reset : AddPartyUiAction
+    data object DeleteParty : AddPartyUiAction
+}
+
+sealed interface AddPartyUiEvent {
+    data class ShowToast(val message: UiText) : AddPartyUiEvent
+    data object OnNavUp : AddPartyUiEvent
 }

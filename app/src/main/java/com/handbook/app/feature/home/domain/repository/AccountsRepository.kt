@@ -34,5 +34,5 @@ interface AccountsRepository {
     suspend fun getParty(partyId: Long): Result<Party>
     suspend fun addParty(party: Party): Result<Long>
     suspend fun updateParty(party: Party): Result<Party>
-    suspend fun deleteParty(party: Party): Result<Unit>
+    suspend fun deleteParty(partyId: Long): Result<Unit>
 }

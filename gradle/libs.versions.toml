@@ -148,7 +148,7 @@ compose-lifecycle = { module = "androidx.lifecycle:lifecycle-runtime-compose", v
 compose-material = { module = "androidx.compose.material:material" }
 compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "composeMaterial3" }
 compose-material3-windowsizeclass = { group = "androidx.compose.material3", name = "material3-window-size-class", version.ref = "composeMaterial3" }
-androidx-compose-material3-windowSizeClass = { group = "androidx.compose.material3", name = "material3-window-size-class" }
+    androidx-compose-material3-windowSizeClass = { group = "androidx.compose.material3", name = "material3-window-size-class" }
 compose-uitooling = { module = "androidx.compose.ui:ui-tooling" }
 compose-accompainst-themeadaptermaterial = { module = "com.google.accompanist:accompanist-themeadapter-material", version.ref = "accompainstThemeadaptermaterial" }
 devzwy-nsfw = { module = "io.github.devzwy:nsfw", version.ref = "devzwyNsfw" }

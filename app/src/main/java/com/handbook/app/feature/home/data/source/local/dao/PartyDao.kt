@@ -50,8 +50,8 @@ interface PartyDao {
     @Upsert
     fun upsertAll(parties: List<PartyEntity>)
 
-    @Delete
-    fun delete(party: PartyEntity): Int
+    @Query("DELETE FROM ${PartyTable.NAME} WHERE ${PartyTable.Columns.ID} = :partyId")
+    fun delete(partyId: Long): Int
 
     @Query(value = "DELETE FROM ${PartyTable.NAME}")
     fun deleteAll(): Int

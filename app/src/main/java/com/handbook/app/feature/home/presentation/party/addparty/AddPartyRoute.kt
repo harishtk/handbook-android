@@ -32,12 +32,15 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -77,7 +80,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.handbook.app.ObserverAsEvents
 import com.handbook.app.core.designsystem.component.ConfirmBackPressDialog
+import com.handbook.app.core.designsystem.component.CustomConfirmDialog
+import com.handbook.app.core.designsystem.component.DialogActionType
 import com.handbook.app.core.designsystem.component.TextFieldError
 import com.handbook.app.core.designsystem.component.ThemePreviews
 import com.handbook.app.core.designsystem.component.text.TextFieldState
@@ -140,9 +146,20 @@ internal fun AddPartyRoute(
 
     LaunchedEffect(key1 = uiState) {
         if (uiState == AddPartyUiState.AddPartySuccess) {
-            context.showToast("Pary added")
+            context.showToast("Party added")
             // viewModel.accept(AddPartyUiAction.Reset)
             onNextPageLatest()
+        }
+    }
+
+    ObserverAsEvents(viewModel.uiEvent) { event ->
+        when (event) {
+            is AddPartyUiEvent.ShowToast -> {
+                context.showToast(event.message.asString(context))
+            }
+            AddPartyUiEvent.OnNavUp -> {
+                onNextPageLatest()
+            }
         }
     }
 }
@@ -157,6 +174,7 @@ private fun AddPartyScreen(
 ) {
     val snacbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    var confirmDelete by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier
@@ -177,6 +195,17 @@ private fun AddPartyScreen(
                         onClick = onNavUp
                     ) {
                         Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = { confirmDelete = true },
+                        colors = IconButtonDefaults.iconButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error,
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete")
                     }
                 }
             )
@@ -215,6 +244,19 @@ private fun AddPartyScreen(
                     }
                 }
             }
+        }
+
+        if (confirmDelete) {
+            CustomConfirmDialog(
+                title = "Delete party",
+                description = "Are you sure you want to delete this party?",
+                onDismiss = { confirmDelete = false },
+                confirmActionType = DialogActionType.DESTRUCTIVE,
+                onConfirm = {
+                    confirmDelete = false
+                    uiAction(AddPartyUiAction.DeleteParty)
+                }
+            )
         }
     }
 }
@@ -449,6 +491,12 @@ private fun DisplayNameInput(
             textStyle = mergedTextStyle.copy(fontWeight = FontWeight.W400),
             maxLines = 1,
             shape = RoundedCornerShape(cornerSizeMedium),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+            ),
             isError = displayNameState.showErrors(),
             modifier = Modifier
                 .fillMaxWidth()
@@ -536,6 +584,12 @@ private fun PhoneNumberInput(
             textStyle = mergedTextStyle,
             maxLines = 1,
             shape = RoundedCornerShape(cornerSizeMedium),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+            ),
             isError = phoneNumberState.showErrors(),
             modifier = Modifier
                 .fillMaxWidth()
@@ -621,6 +675,12 @@ private fun DescriptionInput(
             textStyle = mergedTextStyle,
             maxLines = 1,
             shape = RoundedCornerShape(cornerSizeMedium),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+            ),
             isError = bioState.showErrors(),
             modifier = Modifier
                 .fillMaxWidth()
@@ -706,6 +766,12 @@ private fun AddressInput(
             textStyle = mergedTextStyle,
             maxLines = 1,
             shape = RoundedCornerShape(cornerSizeMedium),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+            ),
             isError = addressState.showErrors(),
             modifier = Modifier
                 .fillMaxWidth()

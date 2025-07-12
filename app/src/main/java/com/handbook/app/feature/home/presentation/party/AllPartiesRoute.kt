@@ -2,16 +2,21 @@
 
 package com.handbook.app.feature.home.presentation.party
 
+import android.animation.ObjectAnimator
 import android.widget.Toast
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -22,6 +27,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -39,6 +45,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDivider
@@ -50,6 +57,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.with
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,6 +69,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -73,6 +86,8 @@ import com.handbook.app.feature.home.domain.model.Party
 import com.handbook.app.feature.home.presentation.search.LoadingScreen
 import com.handbook.app.ui.theme.Gray60
 import com.handbook.app.ui.theme.HandbookTheme
+import com.handbook.app.ui.theme.LightGray
+import com.handbook.app.ui.theme.TextSecondary
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
@@ -181,71 +196,99 @@ private fun AllPartiesScreen(
                     )
                 )
         ) {
-            OutlinedTextField(
+            val interactionSource = remember { MutableInteractionSource() }
+
+            BasicTextField(
                 value = searchQuery,
                 onValueChange = {
                     searchQuery = it
                     // Trigger search action if needed, e.g., uiAction(AllPartiesUiAction.Search(it))
                     uiAction(AllPartiesUiAction.OnTypingQuery(it))
                 },
-                placeholder = {
-                    Text("Search name, phone..")
-                },
-                leadingIcon = {
-                    Icon(Icons.Default.Search, contentDescription = "Search")
-                },
-                shape = RoundedCornerShape(48.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.Gray,
-                    unfocusedBorderColor = Gray60,
-                ),
+                textStyle = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                singleLine = true
-            )
-
-            when (uiState) {
-                is PartiesUiState.Idle -> {}
-                is PartiesUiState.Loading -> LoadingScreen()
-                is PartiesUiState.Parties -> SearchResultContent(
-                    uiState = uiState,
-                    uiAction = uiAction,
-                    listState = listState,
+                interactionSource = interactionSource
+            ) { innerTextField ->
+                TextFieldDefaults.DecorationBox(
+                    value = searchQuery,
+                    innerTextField = innerTextField,
+                    enabled = true,
+                    singleLine = true,
+                    visualTransformation = VisualTransformation.None,
+                    prefix = {
+                        Icon(Icons.Default.Search, contentDescription = "Search", tint = TextSecondary)
+                    },
+                    placeholder = {
+                        Text("Search name, phone..")
+                    },
+                    interactionSource = interactionSource,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                    ),
+                    shape = MaterialTheme.shapes.extraLarge, // RoundedCornerShape(48.dp)
+                    container = {
+                        androidx.compose.material3.Surface(
+                            color = Color.Transparent,
+                            shape = MaterialTheme.shapes.extraLarge, // RoundedCornerShape(48.dp)
+                            border = androidx.compose.foundation.BorderStroke(1.dp, LightGray),
+                        ) {}
+                    }
                 )
+            }
 
-                PartiesUiState.EmptyResult -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
-                    ) {
-                        if (searchQuery.isNotBlank()) {
-                            Text("No parties found", style = MaterialTheme.typography.headlineSmall)
-                        } else {
-                            Text("No parties yet", style = MaterialTheme.typography.headlineSmall)
+            AnimatedContent(
+                targetState = uiState,
+                transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "Animated Content"
+            ) { targetState ->
+                when (targetState) {
+                    is PartiesUiState.Idle -> {}
+                    is PartiesUiState.Loading -> {
+                        LoadingIndicator()
+                    }
+                    is PartiesUiState.Parties -> SearchResultContent(
+                        uiState = targetState,
+                        uiAction = uiAction,
+                        listState = listState,
+                    )
+
+                    PartiesUiState.EmptyResult -> {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+                        ) {
+                            if (searchQuery.isNotBlank()) {
+                                Text("No parties found", style = MaterialTheme.typography.headlineSmall)
+                            } else {
+                                Text("No parties yet", style = MaterialTheme.typography.headlineSmall)
+                            }
                         }
                     }
-                }
 
-                is PartiesUiState.Error -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
-                    ) {
-                        Text("Error: ${uiState.uiText.asString(LocalContext.current)}")
+                    is PartiesUiState.Error -> {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+                        ) {
+                            Text("Error: ${targetState.uiText.asString(LocalContext.current)}")
+                        }
                     }
                 }
             }
         }
     }
 }
-
 @Composable
 private fun SearchResultContent(
     modifier: Modifier = Modifier,
@@ -289,17 +332,18 @@ private fun SearchResultContent(
                 }
             }
         } else {
-            LazyColumn(state = listState) {
+            LazyColumn(state = listState,) {
                 items(
                     count = lazyPagingItems.itemCount,
                     key = lazyPagingItems.itemKey { it.id },
-                    contentType = lazyPagingItems.itemContentType { "party" }
+                    contentType = lazyPagingItems.itemContentType { "party" },
                 ) { index ->
                     val item = lazyPagingItems[index]
                     if (item != null) {
                         PartyItem(
                             party = item,
-                            onClick = { uiAction(AllPartiesUiAction.OnItemClick(item)) }
+                            onClick = { uiAction(AllPartiesUiAction.OnItemClick(item)) },
+                            modifier = Modifier.animateItem()
                         )
                         HorizontalDivider()
                     } else {
@@ -309,10 +353,10 @@ private fun SearchResultContent(
 
                 when (lazyPagingItems.loadState.append) {
                     is LoadState.Error -> {
-                        item { ErrorRetryItem { lazyPagingItems.retry() } }
+                        item { ErrorRetryItem(Modifier.animateItem()) { lazyPagingItems.retry() } }
                     }
                     LoadState.Loading -> {
-                        item { LoadingIndicator() }
+                        item { LoadingIndicator(Modifier.animateItem()) }
                     }
                     is LoadState.NotLoading -> {
                         if (lazyPagingItems.loadState.append.endOfPaginationReached) {
@@ -361,7 +405,7 @@ private fun PartyItem(
 
 @Composable
 private fun LoadingIndicator(modifier: Modifier = Modifier) {
-    Row(modifier.fillMaxWidth()) {
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
         CircularProgressIndicator(
             modifier = modifier.size(24.dp),
             color = Color.Gray,
@@ -388,18 +432,22 @@ private fun AllPartiesScreenPreview() {
     HandbookTheme {
         val samplePartiesList = listOf<Party>(
             Party.create(
+                id = 0,
                 name = "Party Name",
                 contactNumber = "029323-232"
             ),
             Party.create(
+                id = 1,
                 name = "Party Name",
                 contactNumber = "029323-232"
             ),
             Party.create(
+                id = 2,
                 name = "Party Name",
                 contactNumber = "029323-232"
             ),
             Party.create(
+                id = 3,
                 name = "Party Name",
                 contactNumber = "029323-232"
             ),
@@ -408,7 +456,7 @@ private fun AllPartiesScreenPreview() {
         AllPartiesScreen(
             modifier = Modifier,
             uiState = PartiesUiState.Parties(
-                snapshotFlow { PagingData.from(samplePartiesList) },
+                flowOf(PagingData.from(samplePartiesList)),
                 "",
             ),
             uiAction = {},

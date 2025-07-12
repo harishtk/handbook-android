@@ -132,10 +132,10 @@ class LocalAccountsRepository @Inject constructor(
         }
     }
 
-    override suspend fun deleteParty(party: Party): Result<Unit> {
+    override suspend fun deleteParty(partyId: Long): Result<Unit> {
         return withContext(dispatcher) {
             try {
-                partiesDao.delete(party.asEntity())
+                partiesDao.delete(partyId)
                 Result.Success(Unit)
             } catch (e: Exception) {
                 Result.Error(e)
