@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.stateIn
 import com.handbook.app.bottomBarDestinations
 import com.handbook.app.core.util.NetworkMonitor
 import com.handbook.app.feature.home.navigation.homeNavigationRoute
+import com.handbook.app.feature.home.navigation.navigateToAllCategories
+import com.handbook.app.feature.home.navigation.navigateToAllParties
 import com.handbook.app.feature.home.navigation.navigateToHome
 import com.handbook.app.feature.home.navigation.navigateToProfile
 import com.handbook.app.feature.home.navigation.navigateToSampleScreen
@@ -137,6 +139,8 @@ class HandbookAppState(
         Timber.tag("Navigation").d("navigationDrawerDestination: ${navigationDrawerDestination.name}")
         trace("NavigationDrawer: ${navigationDrawerDestination.name}") {
             when (navigationDrawerDestination) {
+                NavigationDrawerDestination.Parties -> navController.navigateToAllParties()
+                NavigationDrawerDestination.Category -> navController.navigateToAllCategories()
                 Support -> navController.navigateToSampleScreen(navigationDrawerDestination.name)
                 Settings -> navController.navigateToSettings()
             }

@@ -103,7 +103,7 @@ fun HandbookApp(
     startDestination: String,
 ) {
     Timber.d("NavHost: startDestination=$startDestination")
-    val shouldShowGradientBackground = false
+    val shouldShowGradientBackground = true
     /*appState.currentTopLevelDestination == TopLevelDestination.HOME*/
 
     var showSettingsDialog by rememberSaveable {
@@ -334,7 +334,7 @@ fun HandbookApp(
 
                 SideEffect {
                     if (drawerWidth == 0f) {
-                        drawerWidth = drawerState.offset.value
+                        drawerWidth = drawerState.currentOffset
                     }
                 }
 
@@ -453,11 +453,11 @@ private fun ShopsNavigationDrawer(
 ) {
     val shopData = ShopData(
         id = "0",
-        name = "Sarathas Clothing",
+        name = "Ganesh Homes",
         thumbnail = "",
-        category = "Textile & Cloting",
-        description = "Sarees, Shirts, Pants",
-        address = "600097",
+        category = "Construction & Consulting",
+        description = "A construction and consulting company",
+        address = "625012",
         image = "",
     )
     DefaultNavigationDrawer(

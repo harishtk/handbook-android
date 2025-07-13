@@ -103,3 +103,22 @@ fun AccountEntryEntity.toAccountEntry(): AccountEntry {
         updatedAt = updatedAt
     )
 }
+
+fun AccountEntry.asEntity(): AccountEntryEntity {
+    val isNew = (this.entryId == 0L)
+    val currentTime = Instant.now().toEpochMilli()
+
+    return AccountEntryEntity(
+        entryId = this.entryId,
+        title = this.title,
+        description = this.description,
+        amount = this.amount,
+        entryType = this.entryType,
+        transactionType = this.transactionType,
+        transactionDate = this.transactionDate,
+        partyId = this.partyId,
+        categoryId = this.categoryId,
+        createdAt = if (isNew) currentTime else this.createdAt,
+        updatedAt = currentTime
+    )
+}

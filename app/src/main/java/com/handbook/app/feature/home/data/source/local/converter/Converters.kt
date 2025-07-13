@@ -9,13 +9,13 @@ class Converters {
     fun fromEntryType(value: EntryType): String = value.name
 
     @TypeConverter
-    fun toEntryType(value: String): EntryType = EntryType.valueOf(value)
+    fun toEntryType(value: String): EntryType = EntryType.fromString(value)
 
     @TypeConverter
     fun fromTransactionType(value: TransactionType): String = value.name
 
     @TypeConverter
-    fun toTransactionType(value: String): TransactionType = TransactionType.valueOf(value)
+    fun toTransactionType(value: String): TransactionType = TransactionType.fromString(value)
 
     // If you were using Instant or Date objects directly instead of Long for timestamps:
     // @TypeConverter

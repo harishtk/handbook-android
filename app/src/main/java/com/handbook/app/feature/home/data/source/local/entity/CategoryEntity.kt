@@ -29,7 +29,7 @@ data class CategoryEntity(
     val createdAt: Long = Instant.now().toEpochMilli(),
 
     @ColumnInfo(name = CategoryTable.Columns.UPDATED_AT)
-    val updatedAt: Long = Instant.now().toEpochMilli(),
+    var updatedAt: Long = Instant.now().toEpochMilli(),
 )
 
 fun CategoryEntity.toCategory(): Category {
@@ -38,6 +38,18 @@ fun CategoryEntity.toCategory(): Category {
         name = name,
         description = description,
         createdAt = createdAt,
+        updatedAt = updatedAt,
+    )
+}
+
+fun Category.asEntity(): CategoryEntity {
+    val isNew = this.id == 0L
+    val currentTime = Instant.now().toEpochMilli()
+    return CategoryEntity(
+        _id = if (isNew) null else id,
+        name = name,
+        description = description,
+        createdAt = if (isNew) currentTime else createdAt,
         updatedAt = updatedAt,
     )
 }

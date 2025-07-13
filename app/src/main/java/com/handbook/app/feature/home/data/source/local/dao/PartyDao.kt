@@ -45,14 +45,14 @@ interface PartyDao {
     fun observeParty(id: Long): Flow<PartyEntity?>
 
     @Upsert
-    fun insert(party: PartyEntity): Long
+    suspend fun insert(party: PartyEntity): Long
 
     @Upsert
-    fun upsertAll(parties: List<PartyEntity>)
+    suspend fun upsertAll(parties: List<PartyEntity>)
 
     @Query("DELETE FROM ${PartyTable.NAME} WHERE ${PartyTable.Columns.ID} = :partyId")
-    fun delete(partyId: Long): Int
+    suspend fun delete(partyId: Long): Int
 
     @Query(value = "DELETE FROM ${PartyTable.NAME}")
-    fun deleteAll(): Int
+    suspend fun deleteAll(): Int
 }

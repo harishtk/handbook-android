@@ -6,4 +6,18 @@ data class Category(
     val description: String?,
     val createdAt: Long,
     val updatedAt: Long,
-)
+) {
+    companion object {
+        fun create(
+            id: Long = 0,
+            name: String,
+            description: String? = null,
+        ) = Category(
+            id = id,
+            name = name,
+            description = description,
+            createdAt = System.currentTimeMillis(),
+            updatedAt = System.currentTimeMillis(),
+        )
+    }
+}

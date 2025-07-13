@@ -14,10 +14,10 @@ asynclayoutinflater = "1.1.0"
 billing = "8.0.0"
 coil = "2.7.0"
 compileSdk = "36"
-compose = "1.5.4"
+compose = "1.8.3"
 composeBom = "2025.06.01"
 composeLifecycle = "2.9.1"
-composeMaterial3 = "1.3.2"
+composeMaterial3 = "1.4.0-alpha17"
 constraintLayout = "2.2.1"
 coreTesting = "2.1.0"
 coroutines = "1.10.2"
@@ -27,6 +27,7 @@ datastore = "1.1.7"
 dokka = "2.0.0"
 eventbus = "3.3.1"
 exoplayer = "2.19.1"
+kotlinxDatetime = "0.7.1"
 shimmer = "0.5.0"
 firebaseBom = "33.16.0"
 firebaseCrashlyticsPlugin = "3.0.4"
@@ -83,6 +84,7 @@ zhpanvip-viewpagerIndicator = "1.2.1"
 
 # Beta
 navigationBeta = "2.7.0-beta01"
+material3Jvmstubs = "1.4.0-alpha17"
 
 [libraries]
 androidx-activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "activity-ktx" }
@@ -195,6 +197,7 @@ kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", ve
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines"}
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "ktserializationJson" }
 ksp-gradlePlugin = { group = "com.google.devtools.ksp", name = "com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
 ktor-client-android = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
@@ -220,6 +223,7 @@ socketio-client = { module = "io.socket:socket.io-client", version.ref = "socket
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 zhpanvip-viewpagerindicator = { module = "com.github.zhpanvip:viewpagerindicator", version.ref = "zhpanvip-viewpagerIndicator"}
 androidx-paging-compose = { group = "androidx.paging", name = "paging-compose-android", version.ref = "paging" }
+androidx-material3-jvmstubs = { group = "androidx.compose.material3", name = "material3-jvmstubs", version.ref = "material3Jvmstubs" }
 
 [bundles]
 coil = ["coil-kt", "coil-kt-compose"]

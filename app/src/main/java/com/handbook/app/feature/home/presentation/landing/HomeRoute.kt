@@ -6,7 +6,6 @@ import android.widget.Toast
 import androidx.activity.compose.ReportDrawnWhen
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -59,7 +58,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -72,7 +70,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import com.handbook.app.ObserverAsEvents
 import com.handbook.app.SharedViewModel
-import com.handbook.app.core.designsystem.component.UserAvatar
 import com.handbook.app.feature.home.domain.model.Post
 import com.handbook.app.feature.home.domain.model.UserSummary
 import com.handbook.app.feature.home.presentation.profile.FullScreenErrorLayout
@@ -100,7 +97,7 @@ internal fun HomeRoute(
         feedUiState = feedUiState,
         snackbarHostState = snackbarHostState,
         uiAction = viewModel.accept,
-        onWritePostRequest = onWritePostRequest,
+        onFABClick = onWritePostRequest,
         onNavigateToNotifications = onNavigateToNotifications
     )
 
@@ -137,7 +134,7 @@ internal fun HomeScreen(
     feedUiState: FeedUiState = FeedUiState.Idle,
     snackbarHostState: SnackbarHostState = SnackbarHostState(),
     uiAction: (HomeUiAction) -> Unit = {},
-    onWritePostRequest: () -> Unit = {},
+    onFABClick: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
 ) {
 
@@ -183,7 +180,7 @@ internal fun HomeScreen(
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = onWritePostRequest,
+                onClick = onFABClick,
             ) {
                 Row(
                     verticalAlignment = CenterVertically,

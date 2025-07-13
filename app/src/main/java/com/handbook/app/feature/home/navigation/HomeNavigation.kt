@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package com.handbook.app.feature.home.navigation
 
 import androidx.compose.animation.AnimatedContentTransitionScope
@@ -17,6 +19,10 @@ import androidx.navigation.navDeepLink
 import androidx.navigation.navigation
 import com.handbook.app.Constant
 import com.handbook.app.SharedViewModel
+import com.handbook.app.feature.home.domain.model.TransactionType
+import com.handbook.app.feature.home.presentation.accounts.addaccount.AddAccountRoute
+import com.handbook.app.feature.home.presentation.category.AllCategoriesRoute
+import com.handbook.app.feature.home.presentation.category.addcategory.AddCategoryRoute
 import com.handbook.app.feature.home.presentation.create.CreateRoute
 import com.handbook.app.feature.home.presentation.landing.HomeRoute
 import com.handbook.app.feature.home.presentation.party.AllPartiesRoute
@@ -26,6 +32,7 @@ import com.handbook.app.feature.home.presentation.search.SearchRoute
 import com.handbook.app.feature.home.presentation.settings.SettingsRoute
 import com.handbook.app.feature.home.presentation.webview.WebPageRoute
 import com.handbook.app.sharedViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 const val HOME_GRAPH_ROUTE_PATTERN = "home_graph"
 const val SETTINGS_GRAPH_ROUTE_PATTERN = "settings_graph"
@@ -40,9 +47,19 @@ const val USER_ID_ARG = "userId"
 const val profileNavigationRoute = "profile_route/{$USER_ID_ARG}"
 const val searchNavigationRoute = "search_route"
 const val notificationsNavigationRoute = "notification_route"
+
 const val allPartiesNavigationRoute = "all_parties_route"
 const val PARTY_ID_ARG = "partyId"
 const val addPartyNavigationRoute = "add_party_route/{$PARTY_ID_ARG}"
+
+const val PICKER_MODE_ARG = "pickerMode"
+const val CATEGORY_ID_ARG = "categoryId"
+const val allCategoriesNavigationRoute = "all_categories_route?categoryId={$CATEGORY_ID_ARG}?pickerMode={$PICKER_MODE_ARG}"
+const val addCategoryNavigationRoute = "add_category_route/{$CATEGORY_ID_ARG}"
+
+const val ACCOUNT_ENTRY_ID_ARG = "accountEntryId"
+const val ACCOUNT_ENTRY_TRANSACTION_TYPE = "transactionType"
+const val addAccountEntryNavigationRoute = "add_account_entry_route/${ACCOUNT_ENTRY_ID_ARG}?transactionType={$ACCOUNT_ENTRY_TRANSACTION_TYPE}"
 
 const val webPageNavigationRoute = "web_page_route?url={url}"
 const val settingsNavigationRoute = "settings_route"
@@ -91,6 +108,39 @@ fun NavController.navigateToAddParty(
     this.navigate(addPartyNavigationRoute.replace("{$PARTY_ID_ARG}", partyId ?: ""), navOptions)
 }
 
+fun NavController.navigateToAllCategories(
+    categoryId: Long = 0L,
+    isInPickerMode: Boolean = false,
+    navOptions: NavOptions? = null
+) {
+    this.navigate(allCategoriesNavigationRoute
+        .replace("{$CATEGORY_ID_ARG}", categoryId.toString())
+        .replace("{$PICKER_MODE_ARG}", isInPickerMode.toString()), navOptions)
+}
+
+fun NavController.navigateToAddCategory(
+    categoryId: String? = null,
+    navOptions: NavOptions? = null
+) {
+    this.navigate(addCategoryNavigationRoute.replace("{$CATEGORY_ID_ARG}", categoryId ?: ""), navOptions)
+}
+
+fun NavController.navigateToAddAccountEntry(
+    accountEntryId: String? = null,
+    transactionType: String = TransactionType.INCOME.name,
+    navOptions: NavOptions? = null
+) {
+    this.navigate(
+        addAccountEntryNavigationRoute
+            .replace("{$ACCOUNT_ENTRY_ID_ARG}", accountEntryId ?: "")
+            .replace("{$ACCOUNT_ENTRY_TRANSACTION_TYPE}", transactionType),
+        navOptions)
+}
+
+fun NavController.navigateToCreate(navOptions: NavOptions? = null) {
+    this.navigate(createNavigationRoute, navOptions)
+}
+
 fun NavController.navigateToWebPage(url: String, navOptions: NavOptions? = null) {
     this.navigate(webPageNavigationRoute.replace("{url}", url), navOptions)
 }
@@ -126,6 +176,7 @@ fun NavGraphBuilder.homeScreen(
         HomeRoute(
             sharedViewModel = sharedViewModel,
             onWritePostRequest = {
+                navController.navigateToAddAccountEntry()
             },
             onNavigateToProfile = { userId ->
                 navController.navigateToProfile(userId)
@@ -196,6 +247,7 @@ fun NavGraphBuilder.homeGraph(
             HomeRoute(
                 sharedViewModel = sharedViewModel,
                 onWritePostRequest = {
+                    navController.navigateToAddAccountEntry()
                 },
                 onNavigateToProfile = { userId ->
                     navController.navigateToProfile(userId)
@@ -234,6 +286,66 @@ fun NavGraphBuilder.homeGraph(
             val sharedViewModel = it.sharedViewModel<SharedViewModel>(navController)
             AddPartyRoute(
                 onNextPage = { navController.navigateUp() },
+            )
+        }
+
+        composable(
+            route = allCategoriesNavigationRoute,
+            arguments = listOf(
+                navArgument(CATEGORY_ID_ARG) {
+                    type = NavType.LongType
+                    defaultValue = 0L
+                },
+                navArgument(PICKER_MODE_ARG) {
+                    type = NavType.BoolType
+                    defaultValue = false
+                }
+            )
+            /* TODO: add deep links and other args here */
+        ) {
+            val sharedViewModel = it.sharedViewModel<SharedViewModel>(navController)
+
+            AllCategoriesRoute(
+                navController = navController,
+                onNavUp = { navController.navigateUp() },
+                onAddCategoryRequest = { categoryId ->
+                    navController.navigateToAddCategory(categoryId = categoryId?.toString())
+                }
+            )
+        }
+
+        composable(
+            route = addCategoryNavigationRoute,
+            arguments = listOf(
+                navArgument(CATEGORY_ID_ARG) { type = NavType.StringType }
+            ),
+        ) {
+            val sharedViewModel = it.sharedViewModel<SharedViewModel>(navController)
+            AddCategoryRoute(
+                onNextPage = { navController.navigateUp() },
+            )
+        }
+
+        composable(
+            route = addAccountEntryNavigationRoute,
+            arguments = listOf(
+                navArgument(ACCOUNT_ENTRY_ID_ARG) {
+                    type = NavType.StringType
+                    defaultValue = ""
+                                                  },
+                navArgument(ACCOUNT_ENTRY_TRANSACTION_TYPE) {
+                    type = NavType.StringType
+                    defaultValue = TransactionType.INCOME.name
+                }
+            ),
+        ) {
+            val sharedViewModel = it.sharedViewModel<SharedViewModel>(navController)
+            AddAccountRoute(
+                navController = navController,
+                onNextPage = { navController.navigateUp() },
+                onSelectCategoryRequest = { categoryId ->
+                    navController.navigateToAllCategories(categoryId, true)
+                }
             )
         }
 

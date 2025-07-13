@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
-package com.handbook.app.feature.home.presentation.party
+package com.handbook.app.feature.home.presentation.category
 
 import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
 import androidx.paging.LoadState
 import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
@@ -75,48 +76,56 @@ import com.handbook.app.ObserverAsEvents
 import com.handbook.app.core.designsystem.component.HandbookBackground
 import com.handbook.app.core.designsystem.component.HandbookGradientBackground
 import com.handbook.app.core.designsystem.component.ThemePreviews
-import com.handbook.app.feature.home.domain.model.Party
+import com.handbook.app.feature.home.domain.model.Category
 import com.handbook.app.ui.theme.Gray60
 import com.handbook.app.ui.theme.HandbookTheme
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
 @Composable
-internal fun AllPartiesRoute(
+internal fun AllCategoriesRoute(
     modifier: Modifier = Modifier,
-    viewModel: AllPartiesViewModel = hiltViewModel(),
+    navController: NavController,
+    viewModel: AllCategoriesViewModel = hiltViewModel(),
     onNavUp: () -> Unit,
-    onAddPartyRequest: (partyId: Long?) -> Unit,
+    onAddCategoryRequest: (categoryId: Long?) -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
-
+    
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isInPickerMode by viewModel.isInPickerMode.collectAsStateWithLifecycle()
 
-    AllPartiesScreen(
+    AllCategoriesScreen(
         modifier = modifier,
         uiState = uiState,
         uiAction = viewModel.accept,
         snackbarHostState = snackbarHostState,
         listState = listState,
         onNavUp = onNavUp,
-        onAddPartyRequest = onAddPartyRequest,
+        onAddCategoryRequest = onAddCategoryRequest,
     )
 
     ObserverAsEvents(viewModel.uiEvent) {
         when (it) {
-            is AllPartiesUiEvent.ShowSnack -> {
+            is AllCategoriesUiEvent.ShowSnack -> {
                 scope.launch {
                     snackbarHostState.showSnackbar(it.message.asString(context))
                 }
             }
-            is AllPartiesUiEvent.ShowToast -> {
+            is AllCategoriesUiEvent.ShowToast -> {
                 Toast.makeText(context, it.message.asString(context), Toast.LENGTH_SHORT).show()
             }
-            is AllPartiesUiEvent.NavigateToEditParty -> {
-                onAddPartyRequest(it.partyId)
+            is AllCategoriesUiEvent.NavigateToEditCategory -> {
+                if (isInPickerMode) {
+                    navController.previousBackStackEntry?.savedStateHandle
+                        ?.set("categoryId", it.categoryId)
+                    navController.popBackStack()
+                } else {
+                    onAddCategoryRequest(it.categoryId)
+                }
             }
         }
     }
@@ -124,14 +133,14 @@ internal fun AllPartiesRoute(
 }
 
 @Composable
-private fun AllPartiesScreen(
+private fun AllCategoriesScreen(
     modifier: Modifier,
-    uiState: PartiesUiState,
-    uiAction: (AllPartiesUiAction) -> Unit,
+    uiState: CategoriesUiState,
+    uiAction: (AllCategoriesUiAction) -> Unit,
     snackbarHostState: SnackbarHostState = SnackbarHostState(),
     listState: LazyListState = LazyListState(),
     onNavUp: () -> Unit = {},
-    onAddPartyRequest: (partyId: Long?) -> Unit = {},
+    onAddCategoryRequest: (categoryId: Long?) -> Unit = {},
 ) {
     TopAppBarDefaults.pinnedScrollBehavior()
     var searchQuery by rememberSaveable { mutableStateOf("") }
@@ -147,7 +156,7 @@ private fun AllPartiesScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(text = "Parties", style = MaterialTheme.typography.titleLarge)
+                    Text(text = "Categories", style = MaterialTheme.typography.titleLarge)
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavUp) {
@@ -158,7 +167,7 @@ private fun AllPartiesScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { onAddPartyRequest(null) },
+                onClick = { onAddCategoryRequest(null) },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.onGloballyPositioned { coords ->
@@ -169,7 +178,7 @@ private fun AllPartiesScreen(
                     )
                 }
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Party")
+                Icon(Icons.Default.Add, contentDescription = "Add Category")
             }
         },
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
@@ -190,8 +199,8 @@ private fun AllPartiesScreen(
                 value = searchQuery,
                 onValueChange = {
                     searchQuery = it
-                    // Trigger search action if needed, e.g., uiAction(AllPartiesUiAction.Search(it))
-                    uiAction(AllPartiesUiAction.OnTypingQuery(it))
+                    // Trigger search action if needed, e.g., uiAction(AllCategoriesUiAction.Search(it))
+                    uiAction(AllCategoriesUiAction.OnTypingQuery(it))
                 },
                 placeholder = {
                     Text("Search name, phone..")
@@ -215,17 +224,17 @@ private fun AllPartiesScreen(
                 transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "Animated Content"
             ) { targetState ->
                 when (targetState) {
-                    is PartiesUiState.Idle -> {}
-                    is PartiesUiState.Loading -> {
+                    is CategoriesUiState.Idle -> {}
+                    is CategoriesUiState.Loading -> {
                         LoadingIndicator()
                     }
-                    is PartiesUiState.Parties -> SearchResultContent(
+                    is CategoriesUiState.Categories -> SearchResultContent(
                         uiState = targetState,
                         uiAction = uiAction,
                         listState = listState,
                     )
 
-                    PartiesUiState.EmptyResult -> {
+                    CategoriesUiState.EmptyResult -> {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -234,14 +243,14 @@ private fun AllPartiesScreen(
                             verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
                         ) {
                             if (searchQuery.isNotBlank()) {
-                                Text("No parties found", style = MaterialTheme.typography.headlineSmall)
+                                Text("No categories found", style = MaterialTheme.typography.headlineSmall)
                             } else {
-                                Text("No parties yet", style = MaterialTheme.typography.headlineSmall)
+                                Text("No categories yet", style = MaterialTheme.typography.headlineSmall)
                             }
                         }
                     }
 
-                    is PartiesUiState.Error -> {
+                    is CategoriesUiState.Error -> {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -260,8 +269,8 @@ private fun AllPartiesScreen(
 @Composable
 private fun SearchResultContent(
     modifier: Modifier = Modifier,
-    uiState: PartiesUiState.Parties,
-    uiAction: (AllPartiesUiAction) -> Unit = {},
+    uiState: CategoriesUiState.Categories,
+    uiAction: (AllCategoriesUiAction) -> Unit = {},
     listState: LazyListState = rememberLazyListState(),
 ) {
     LocalContext.current
@@ -271,7 +280,7 @@ private fun SearchResultContent(
             .fillMaxSize()
             .padding(8.dp),
     ) {
-        val lazyPagingItems: LazyPagingItems<Party> = uiState.parties.collectAsLazyPagingItems()
+        val lazyPagingItems: LazyPagingItems<Category> = uiState.categories.collectAsLazyPagingItems()
 
         // After the initial load or a refresh, itemCount will reflect the loaded items.
         // It's important to also consider the load states for a complete picture.
@@ -294,9 +303,9 @@ private fun SearchResultContent(
                 verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
             ) {
                 if (uiState.searchQuery.isNotBlank()) {
-                    Text("No parties found", style = MaterialTheme.typography.headlineSmall)
+                    Text("No categories found", style = MaterialTheme.typography.headlineSmall)
                 } else {
-                    Text("No parties yet", style = MaterialTheme.typography.headlineSmall)
+                    Text("No categories yet", style = MaterialTheme.typography.headlineSmall)
                 }
             }
         } else {
@@ -308,9 +317,9 @@ private fun SearchResultContent(
                 ) { index ->
                     val item = lazyPagingItems[index]
                     if (item != null) {
-                        PartyItem(
+                        CategoryItem(
                             party = item,
-                            onClick = { uiAction(AllPartiesUiAction.OnItemClick(item)) },
+                            onClick = { uiAction(AllCategoriesUiAction.OnItemClick(item)) },
                             modifier = Modifier.animateItem()
                         )
                         HorizontalDivider()
@@ -338,9 +347,9 @@ private fun SearchResultContent(
 }
 
 @Composable
-private fun PartyItem(
+private fun CategoryItem(
     modifier: Modifier = Modifier,
-    party: Party,
+    party: Category,
     onClick: () -> Unit = {}
 ) {
     Row(
@@ -362,10 +371,6 @@ private fun PartyItem(
             Text(
                 text = party.name,
                 style = MaterialTheme.typography.titleMedium
-            )
-            Text(
-                text = party.contactNumber,
-                style = MaterialTheme.typography.bodyMedium
             )
         }
     }
@@ -396,38 +401,34 @@ private fun ErrorRetryItem(modifier: Modifier = Modifier, onRetry: () -> Unit) {
 
 @ThemePreviews
 @Composable
-private fun AllPartiesScreenPreview() {
+private fun AllCategoriesScreenPreview() {
     HandbookTheme(
         androidTheme = true,
         disableDynamicTheming = true
     ) {
-        val samplePartiesList = listOf<Party>(
-            Party.create(
+        val sampleCategoriesList = listOf<Category>(
+            Category.create(
                 id = 0,
-                name = "Party Name",
-                contactNumber = "029323-232"
+                name = "Category Name",
             ),
-            Party.create(
+            Category.create(
                 id = 1,
-                name = "Party Name",
-                contactNumber = "029323-232"
+                name = "Category Name",
             ),
-            Party.create(
+            Category.create(
                 id = 2,
-                name = "Party Name",
-                contactNumber = "029323-232"
+                name = "Category Name",
             ),
-            Party.create(
+            Category.create(
                 id = 3,
-                name = "Party Name",
-                contactNumber = "029323-232"
+                name = "Category Name",
             ),
         )
 
-        AllPartiesScreen(
+        AllCategoriesScreen(
             modifier = Modifier,
-            uiState = PartiesUiState.Parties(
-                flowOf(PagingData.from(samplePartiesList)),
+            uiState = CategoriesUiState.Categories(
+                flowOf(PagingData.from(sampleCategoriesList)),
                 "",
             ),
             uiAction = {},
@@ -437,31 +438,27 @@ private fun AllPartiesScreenPreview() {
 
 @Preview(showBackground = true)
 @Composable
-private fun PartyItemPreview() {
+private fun CategoryItemPreview() {
     HandbookBackground {
         HandbookGradientBackground() {
             HandbookTheme(androidTheme = true) {
-                val samplePartiesList = listOf<Party>(
-                    Party.create(
-                        name = "Party Name",
-                        contactNumber = "029323-232"
+                val sampleCategoriesList = listOf<Category>(
+                    Category.create(
+                        name = "Category Name",
                     ),
-                    Party.create(
-                        name = "Party Name",
-                        contactNumber = "029323-232"
+                    Category.create(
+                        name = "Category Name",
                     ),
-                    Party.create(
-                        name = "Party Name",
-                        contactNumber = "029323-232"
+                    Category.create(
+                        name = "Category Name",
                     ),
-                    Party.create(
-                        name = "Party Name",
-                        contactNumber = "029323-232"
+                    Category.create(
+                        name = "Category Name",
                     ),
                 )
                 Column {
-                    samplePartiesList.forEach { party ->
-                        PartyItem(party = party)
+                    sampleCategoriesList.forEach { party ->
+                        CategoryItem(party = party)
                         HorizontalDivider()
                     }
                 }

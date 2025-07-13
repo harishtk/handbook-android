@@ -4,7 +4,9 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.handbook.app.feature.home.data.source.local.converter.Converters
 import com.handbook.app.feature.home.data.source.local.dao.AccountEntryDao
 import com.handbook.app.feature.home.data.source.local.dao.AttachmentDao
 import com.handbook.app.feature.home.data.source.local.dao.CategoryDao
@@ -15,6 +17,7 @@ import com.handbook.app.feature.home.data.source.local.entity.AttachmentEntity
 import com.handbook.app.feature.home.data.source.local.entity.CategoryEntity
 import com.handbook.app.feature.home.data.source.local.entity.PartyEntity
 
+@TypeConverters(Converters::class)
 @Database(
     entities = [AccountEntryEntity::class, CategoryEntity::class, PartyEntity::class,
         AttachmentEntity::class, AccountEntryFtsEntity::class],

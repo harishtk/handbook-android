@@ -1,8 +1,10 @@
 package com.handbook.app.feature.home.data.source.local.dao
 
+import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Upsert
 import com.handbook.app.feature.home.data.source.local.entity.CategoryEntity
@@ -22,6 +24,15 @@ interface CategoryDao {
     @Query(
         value = """
         SELECT * FROM ${CategoryTable.NAME}
+        WHERE (:query = '' OR ${CategoryTable.Columns.NAME} LIKE '%' || :query || '%')
+        ORDER BY ${CategoryTable.Columns.CREATED_AT} DESC
+    """
+    )
+    fun categoriesPagingSource(query: String): PagingSource<Int, CategoryEntity>
+
+    @Query(
+        value = """
+        SELECT * FROM ${CategoryTable.NAME}
         WHERE ${CategoryTable.Columns.ID} = :id
     """
     )
@@ -35,15 +46,15 @@ interface CategoryDao {
     )
     fun observeCategory(id: Long): Flow<CategoryEntity?>
 
-    @Insert
-    fun insert(category: CategoryEntity): Long
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(category: CategoryEntity): Long
 
     @Upsert
-    fun upsertAll(categories: List<CategoryEntity>)
+    suspend fun upsertAll(categories: List<CategoryEntity>)
 
-    @Delete
-    fun delete(category: CategoryEntity)
+    @Query("DELETE FROM ${CategoryTable.NAME} WHERE ${CategoryTable.Columns.ID} = :categoryId")
+    suspend fun delete(categoryId: Long): Int
 
     @Query(value = "DELETE FROM ${CategoryTable.NAME}")
-    fun deleteAll()
+    suspend fun deleteAll()
 }

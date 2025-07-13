@@ -9,6 +9,18 @@ enum class NavigationDrawerDestination(
     val iconTextId: Int,
     val labelTextId: Int,
 ) {
+    Parties(
+        selectedIcon = HandbookIcons.Id_Group_Outline,
+        unselectedIcon = HandbookIcons.Id_Group_Outline,
+        iconTextId = R.string.parties,
+        labelTextId = R.string.parties
+    ),
+    Category(
+        selectedIcon = HandbookIcons.Id_Category_Outline,
+        unselectedIcon = HandbookIcons.Id_Category_Outline,
+        iconTextId = R.string.category,
+        labelTextId = R.string.category
+    ),
     Support(
         selectedIcon = HandbookIcons.Id_Help_Outline,
         unselectedIcon = HandbookIcons.Id_Help_Outline,

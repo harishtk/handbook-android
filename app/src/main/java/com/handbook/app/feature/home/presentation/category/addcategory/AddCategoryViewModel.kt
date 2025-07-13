@@ -1,4 +1,4 @@
-package com.handbook.app.feature.home.presentation.party.addparty
+package com.handbook.app.feature.home.presentation.category.addcategory
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -9,7 +9,7 @@ import com.handbook.app.common.util.loadstate.LoadStates
 import com.handbook.app.common.util.loadstate.LoadType
 import com.handbook.app.core.util.ErrorMessage
 import com.handbook.app.core.util.fold
-import com.handbook.app.feature.home.domain.model.Party
+import com.handbook.app.feature.home.domain.model.Category
 import com.handbook.app.feature.home.domain.repository.AccountsRepository
 import com.handbook.app.ifDebug
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,7 +27,7 @@ import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 
 @HiltViewModel
-class AddPartyViewModel @Inject constructor(
+class AddCategoryViewModel @Inject constructor(
     private val accountsRepository: AccountsRepository,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -35,39 +35,37 @@ class AddPartyViewModel @Inject constructor(
     private val viewModelState = MutableStateFlow(ViewModelState())
 
     val uiState = viewModelState
-        .map(ViewModelState::toAddPartyUiState)
+        .map(ViewModelState::toAddCategoryUiState)
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = viewModelState.value.toAddPartyUiState()
+            initialValue = viewModelState.value.toAddCategoryUiState()
         )
-    val partyId = savedStateHandle.getStateFlow("partyId", "")
+    val categoryId = savedStateHandle.getStateFlow("categoryId", "")
 
-    private val _uiEvent = MutableSharedFlow<AddPartyUiEvent>()
+    private val _uiEvent = MutableSharedFlow<AddCategoryUiEvent>()
     val uiEvent = _uiEvent.asSharedFlow()
 
-    val accept: (AddPartyUiAction) -> Unit
+    val accept: (AddCategoryUiAction) -> Unit
 
-    private var addPartyJob: Job? = null
-    private var deletePartyJob: Job? = null
+    private var addCategoryJob: Job? = null
+    private var deleteCategoryJob: Job? = null
 
     init {
         accept = { uiAction -> onUiAction(uiAction) }
 
-        if (partyId.value.isNotBlank()) {
-            viewModelState.update { state -> state.copy(partyId = partyId.value.toLong()) }
+        if (categoryId.value.isNotBlank()) {
+            viewModelState.update { state -> state.copy(categoryId = categoryId.value.toLong()) }
             viewModelScope.launch {
-                accountsRepository.getParty(partyId.value.toLong()).fold(
+                accountsRepository.getCategory(categoryId.value.toLong()).fold(
                     onFailure = { exception ->
                     },
                     onSuccess = { party ->
                         viewModelState.update { state ->
                             state.copy(
-                                partyId = party.id,
+                                categoryId = party.id,
                                 name = party.name,
-                                contact = party.contactNumber,
                                 description = party.description ?: "",
-                                address = party.address ?: "",
                             )
                         }
                     }
@@ -76,40 +74,36 @@ class AddPartyViewModel @Inject constructor(
         }
     }
 
-    private fun onUiAction(action: AddPartyUiAction) {
+    private fun onUiAction(action: AddCategoryUiAction) {
         when (action) {
-            AddPartyUiAction.ErrorShown -> {
+            AddCategoryUiAction.ErrorShown -> {
 
             }
 
-            AddPartyUiAction.Reset -> {
+            AddCategoryUiAction.Reset -> {
                 viewModelState.update { state ->
                     state.copy(
                         loadState = LoadStates.IDLE,
-                        isAddPartySuccessful = false,
+                        isAddCategorySuccessful = false,
                         name = "",
-                        contact = "",
                         description = "",
-                        address = "",
                         errorMessage = null
                     )
                 }
             }
 
-            is AddPartyUiAction.Submit -> {
+            is AddCategoryUiAction.Submit -> {
                 viewModelState.update { state ->
                     state.copy(
                         name = action.name,
-                        contact = action.contact,
                         description = action.description,
-                        address = action.address
                     )
                 }
                 validate()
             }
 
-            AddPartyUiAction.DeleteParty -> {
-                deleteParty()
+            AddCategoryUiAction.DeleteCategory -> {
+                deleteCategory()
             }
         }
     }
@@ -117,27 +111,25 @@ class AddPartyViewModel @Inject constructor(
     private fun validate() {
         // No validation required.
 
-        val party = Party.create(
-            id = viewModelState.value.partyId ?: 0,
+        val party = Category.create(
+            id = viewModelState.value.categoryId ?: 0,
             name = viewModelState.value.name,
-            contactNumber = viewModelState.value.contact,
             description = viewModelState.value.description,
-            address = viewModelState.value.address,
         )
-        addParty(party)
+        addCategory(party)
     }
 
-    private fun addParty(party: Party) {
-        if (addPartyJob?.isActive == true) {
+    private fun addCategory(party: Category) {
+        if (addCategoryJob?.isActive == true) {
             val t = IllegalStateException("A request is already active.")
             ifDebug { Timber.w(t) }
             return
         }
 
-        addPartyJob?.cancel(CancellationException())
+        addCategoryJob?.cancel(CancellationException())
         setLoading(LoadType.ACTION, LoadState.Loading())
-        addPartyJob = viewModelScope.launch {
-            accountsRepository.addParty(party).fold(
+        addCategoryJob = viewModelScope.launch {
+            accountsRepository.addCategory(party).fold(
                 onFailure = { exception ->
                     ifDebug { Timber.e(exception) }
                     val errorMessage = ErrorMessage(
@@ -155,7 +147,7 @@ class AddPartyViewModel @Inject constructor(
                     setLoading(LoadType.ACTION, LoadState.NotLoading.Complete)
                     viewModelState.update { state ->
                         state.copy(
-                            isAddPartySuccessful = true
+                            isAddCategorySuccessful = true
                         )
                     }
                 },
@@ -163,10 +155,10 @@ class AddPartyViewModel @Inject constructor(
         }
     }
 
-    private fun deleteParty() {
-        val partyId = viewModelState.value.partyId ?: return
-        deletePartyJob = viewModelScope.launch {
-            accountsRepository.getParty(partyId).fold(
+    private fun deleteCategory() {
+        val partyId = viewModelState.value.categoryId ?: return
+        deleteCategoryJob = viewModelScope.launch {
+            accountsRepository.getCategory(partyId).fold(
                 onFailure = { exception ->
                     Timber.e(exception)
                     val errorMessage = ErrorMessage(
@@ -181,11 +173,11 @@ class AddPartyViewModel @Inject constructor(
                     }
                 },
                 onSuccess = { party ->
-                    accountsRepository.deleteParty(partyId).fold(
+                    accountsRepository.deleteCategory(partyId).fold(
                         onFailure = {},
                         onSuccess = {
-                            sendEvent(AddPartyUiEvent.ShowToast(UiText.DynamicString("Party deleted")))
-                            sendEvent(AddPartyUiEvent.OnNavUp)
+                            sendEvent(AddCategoryUiEvent.ShowToast(UiText.DynamicString("Category deleted")))
+                            sendEvent(AddCategoryUiEvent.OnNavUp)
                         }
                     )
                 }
@@ -201,7 +193,7 @@ class AddPartyViewModel @Inject constructor(
         viewModelState.update { state -> state.copy(loadState = newLoadState) }
     }
 
-    private fun sendEvent(event: AddPartyUiEvent) {
+    private fun sendEvent(event: AddCategoryUiEvent) {
         viewModelScope.launch { _uiEvent.emit(event) }
     }
 
@@ -210,60 +202,52 @@ class AddPartyViewModel @Inject constructor(
 private data class ViewModelState(
     val loadState: LoadStates = LoadStates.IDLE,
 
-    val partyId: Long? = null,
+    val categoryId: Long? = null,
 
     val name: String = "",
-    val contact: String = "",
     val description: String = "",
-    val address: String = "",
     val errorMessage: ErrorMessage? = null,
 
     /**
      * Flag to indicate that the signup is successful
      */
-    val isAddPartySuccessful: Boolean = false,
+    val isAddCategorySuccessful: Boolean = false,
 ) {
-    fun toAddPartyUiState(): AddPartyUiState {
-        return if (isAddPartySuccessful) {
-            AddPartyUiState.AddPartySuccess
+    fun toAddCategoryUiState(): AddCategoryUiState {
+        return if (isAddCategorySuccessful) {
+            AddCategoryUiState.AddCategorySuccess
         } else {
-            AddPartyUiState.AddPartyForm(
+            AddCategoryUiState.AddCategoryForm(
                 name = name,
-                contact = contact,
                 description = description,
-                address = address,
                 errorMessage = errorMessage,
             )
         }
     }
 }
 
-sealed interface AddPartyUiState {
-    data class AddPartyForm(
+sealed interface AddCategoryUiState {
+    data class AddCategoryForm(
         val name: String,
-        val contact: String,
         val description: String,
-        val address: String,
         val errorMessage: ErrorMessage? = null,
-    ) : AddPartyUiState
+    ) : AddCategoryUiState
 
-    data object AddPartySuccess : AddPartyUiState
+    data object AddCategorySuccess : AddCategoryUiState
 }
 
-sealed interface AddPartyUiAction {
-    data object ErrorShown : AddPartyUiAction
+sealed interface AddCategoryUiAction {
+    data object ErrorShown : AddCategoryUiAction
     data class Submit(
         val name: String,
-        val contact: String,
         val description: String,
-        val address: String,
-    ) : AddPartyUiAction
+    ) : AddCategoryUiAction
 
-    data object Reset : AddPartyUiAction
-    data object DeleteParty : AddPartyUiAction
+    data object Reset : AddCategoryUiAction
+    data object DeleteCategory : AddCategoryUiAction
 }
 
-sealed interface AddPartyUiEvent {
-    data class ShowToast(val message: UiText) : AddPartyUiEvent
-    data object OnNavUp : AddPartyUiEvent
+sealed interface AddCategoryUiEvent {
+    data class ShowToast(val message: UiText) : AddCategoryUiEvent
+    data object OnNavUp : AddCategoryUiEvent
 }

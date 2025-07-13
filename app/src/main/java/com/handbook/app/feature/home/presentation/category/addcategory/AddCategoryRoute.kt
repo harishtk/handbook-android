@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
-package com.handbook.app.feature.home.presentation.party.addparty
+package com.handbook.app.feature.home.presentation.category.addcategory
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -68,7 +68,6 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
@@ -85,17 +84,10 @@ import com.handbook.app.core.designsystem.component.TextFieldError
 import com.handbook.app.core.designsystem.component.ThemePreviews
 import com.handbook.app.core.designsystem.component.text.TextFieldState
 import com.handbook.app.core.designsystem.component.text.TextFieldStateHandler
-import com.handbook.app.feature.home.presentation.party.components.form.AddressLength
-import com.handbook.app.feature.home.presentation.party.components.form.AddressState
-import com.handbook.app.feature.home.presentation.party.components.form.AddressStateSaver
 import com.handbook.app.feature.home.presentation.party.components.form.DescriptionLength
 import com.handbook.app.feature.home.presentation.party.components.form.DescriptionState
-import com.handbook.app.feature.home.presentation.party.components.form.DescriptionStateSaver
 import com.handbook.app.feature.home.presentation.party.components.form.DisplayNameLength
 import com.handbook.app.feature.home.presentation.party.components.form.DisplayNameState
-import com.handbook.app.feature.home.presentation.party.components.form.PhoneNumberLength
-import com.handbook.app.feature.home.presentation.party.components.form.PhoneNumberState
-import com.handbook.app.feature.home.presentation.party.components.form.PhoneNumberStateSaver
 import com.handbook.app.showToast
 import com.handbook.app.ui.cornerSizeMedium
 import com.handbook.app.ui.insetMedium
@@ -105,8 +97,8 @@ import com.handbook.app.ui.theme.HandbookTheme
 import com.handbook.app.ui.theme.TextSecondary
 
 @Composable
-internal fun AddPartyRoute(
-    viewModel: AddPartyViewModel = hiltViewModel(),
+internal fun AddCategoryRoute(
+    viewModel: AddCategoryViewModel = hiltViewModel(),
     onNextPage: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -119,12 +111,12 @@ internal fun AddPartyRoute(
     }
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val editPartyId by viewModel.partyId.collectAsStateWithLifecycle()
+    val editCategoryId by viewModel.categoryId.collectAsStateWithLifecycle()
 
-    AddPartyScreen(
+    AddCategoryScreen(
         uiState = uiState,
         uiAction = viewModel.accept,
-        isInEditMode = editPartyId.isNotBlank(),
+        isInEditMode = editCategoryId.isNotBlank(),
         onNavUp = onNextPageLatest
     )
 
@@ -140,19 +132,19 @@ internal fun AddPartyRoute(
     }
 
     LaunchedEffect(key1 = uiState) {
-        if (uiState == AddPartyUiState.AddPartySuccess) {
-            context.showToast("Party added")
-            // viewModel.accept(AddPartyUiAction.Reset)
+        if (uiState == AddCategoryUiState.AddCategorySuccess) {
+            context.showToast("Category added")
+            // viewModel.accept(AddCategoryUiAction.Reset)
             onNextPageLatest()
         }
     }
 
     ObserverAsEvents(viewModel.uiEvent) { event ->
         when (event) {
-            is AddPartyUiEvent.ShowToast -> {
+            is AddCategoryUiEvent.ShowToast -> {
                 context.showToast(event.message.asString(context))
             }
-            AddPartyUiEvent.OnNavUp -> {
+            AddCategoryUiEvent.OnNavUp -> {
                 onNextPageLatest()
             }
         }
@@ -160,10 +152,10 @@ internal fun AddPartyRoute(
 }
 
 @Composable
-private fun AddPartyScreen(
+private fun AddCategoryScreen(
     modifier: Modifier = Modifier,
-    uiState: AddPartyUiState,
-    uiAction: (AddPartyUiAction) -> Unit,
+    uiState: AddCategoryUiState,
+    uiAction: (AddCategoryUiAction) -> Unit,
     isInEditMode: Boolean = false,
     onNavUp: () -> Unit = {},
 ) {
@@ -179,9 +171,9 @@ private fun AddPartyScreen(
             TopAppBar(
                 title = {
                     val titleMessage = if (isInEditMode) {
-                        "Edit Party"
+                        "Edit Category"
                     } else {
-                        "Add Party"
+                        "Add Category"
                     }
                     Text(text = titleMessage, style = MaterialTheme.typography.titleLarge)
                 },
@@ -226,12 +218,12 @@ private fun AddPartyScreen(
             ) {
 
                 when (uiState) {
-                    AddPartyUiState.AddPartySuccess -> {
+                    AddCategoryUiState.AddCategorySuccess -> {
                         // noop
                     }
 
-                    is AddPartyUiState.AddPartyForm -> {
-                        AddPartyFormLayout(
+                    is AddCategoryUiState.AddCategoryForm -> {
+                        AddCategoryFormLayout(
                             uiState = uiState,
                             uiAction = uiAction,
                             isInEditMode = isInEditMode
@@ -243,13 +235,13 @@ private fun AddPartyScreen(
 
         if (confirmDelete) {
             CustomConfirmDialog(
-                title = "Delete party",
-                description = "Are you sure you want to delete this party?",
+                title = "Delete category",
+                description = "Are you sure you want to delete this category?",
                 onDismiss = { confirmDelete = false },
                 confirmActionType = DialogActionType.DESTRUCTIVE,
                 onConfirm = {
                     confirmDelete = false
-                    uiAction(AddPartyUiAction.DeleteParty)
+                    uiAction(AddCategoryUiAction.DeleteCategory)
                 }
             )
         }
@@ -257,56 +249,35 @@ private fun AddPartyScreen(
 }
 
 @Composable
-private fun ColumnScope.AddPartyFormLayout(
+private fun ColumnScope.AddCategoryFormLayout(
     modifier: Modifier = Modifier,
-    uiState: AddPartyUiState.AddPartyForm,
-    uiAction: (AddPartyUiAction) -> Unit,
+    uiState: AddCategoryUiState.AddCategoryForm,
+    uiAction: (AddCategoryUiAction) -> Unit,
     isInEditMode: Boolean = false,
 ) {
     val displayNameFocusRequester = remember { FocusRequester() }
-    val phoneNumberFocusRequester = remember { FocusRequester() }
     val descriptionFocusRequester = remember { FocusRequester() }
-    val addressFocusRequester = remember { FocusRequester() }
 
-    val displayNameState = DisplayNameState.createTextFieldStateHandler()
-
-    val phoneNumberState by rememberSaveable(stateSaver = PhoneNumberStateSaver) {
-        mutableStateOf(PhoneNumberState(uiState.contact))
-    }
-    val descriptionState by rememberSaveable(stateSaver = DescriptionStateSaver) {
+    val displayNameState = DisplayNameState.createTextFieldStateHandler(uiState.name)
+    val descriptionState by rememberSaveable {
         mutableStateOf(DescriptionState(uiState.description))
-    }
-    val addressState by rememberSaveable(stateSaver = AddressStateSaver) {
-        mutableStateOf(AddressState(uiState.address))
     }
 
     var enableDescription by remember { mutableStateOf(false) }
-    var enableAddress by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState) {
         if (displayNameState.text != uiState.name) {
-            displayNameState.onTextChanged(uiState.name)
-        }
-        if (phoneNumberState.text != uiState.contact) {
-            phoneNumberState.updateText(uiState.contact)
+            displayNameState.updateText(uiState.name)
         }
         if (descriptionState.text != uiState.description) {
             descriptionState.updateText(uiState.description)
             enableDescription = descriptionState.text.isNotBlank()
-        }
-        if (addressState.text != uiState.address) {
-            addressState.updateText(uiState.address)
-            enableAddress = addressState.text.isNotBlank()
         }
     }
 
     DisplayNameInput(
         displayNameState = displayNameState,
         provideFocusRequester = { displayNameFocusRequester }
-    )
-    PhoneNumberInput(
-        phoneNumberState = phoneNumberState,
-        provideFocusRequester = { phoneNumberFocusRequester }
     )
 
     TextButton(
@@ -332,29 +303,6 @@ private fun ColumnScope.AddPartyFormLayout(
         )
     }
 
-    TextButton(
-        modifier = Modifier.padding(horizontal = insetSmall),
-        onClick = {
-            enableAddress = !enableAddress
-            if (!enableAddress) {
-                addressState.updateText("")
-            }
-        }
-    ) {
-        if (enableAddress) {
-            Text("⛔ Remove address")
-        } else {
-            Text("🏠 Add address")
-        }
-    }
-
-    AnimatedVisibility(enableAddress) {
-        AddressInput(
-            addressState = addressState,
-            provideFocusRequester = { addressFocusRequester }
-        )
-    }
-
     uiState.errorMessage?.let { error ->
         Row(modifier = Modifier.fillMaxWidth()) {
             Spacer(modifier = Modifier.width(8.dp))
@@ -372,7 +320,7 @@ private fun ColumnScope.AddPartyFormLayout(
 
     val enableNext = true
     Footer(
-        text = if (isInEditMode) "Update Party" else "Add Party",
+        text = if (isInEditMode) "Update Category" else "Add Category",
         enabled = enableNext,
         onClick = {
             var isValid = true
@@ -385,12 +333,6 @@ private fun ColumnScope.AddPartyFormLayout(
                     shouldRequestFocus = false
                 }
             }
-            if (!phoneNumberState.isValid) {
-                phoneNumberState.enableShowErrors()
-                isValid = false
-                phoneNumberFocusRequester.requestFocus()
-                shouldRequestFocus = false
-            }
             if (!descriptionState.isValid) {
                 descriptionState.enableShowErrors()
                 isValid = false
@@ -398,22 +340,12 @@ private fun ColumnScope.AddPartyFormLayout(
                     descriptionFocusRequester.requestFocus()
                 }
             }
-            if (!addressState.isValid) {
-                addressState.enableShowErrors()
-                isValid = false
-                if (shouldRequestFocus) {
-                    addressFocusRequester.requestFocus()
-                    shouldRequestFocus = false
-                }
-            }
 
             if (isValid) {
                 uiAction(
-                    AddPartyUiAction.Submit(
+                    AddCategoryUiAction.Submit(
                         name = displayNameState.text,
-                        contact = phoneNumberState.text,
                         description = descriptionState.text,
-                        address = addressState.text
                     )
                 )
             }
@@ -456,7 +388,7 @@ private fun DisplayNameInput(
         OutlinedTextField(
             value = displayNameState.text,
             onValueChange = { text ->
-                displayNameState.updateText(text.take(DisplayNameLength))
+                displayNameState.onTextChanged(text.take(DisplayNameLength))
                 onValueChange(displayNameState.text)
             },
             placeholder = {
@@ -505,99 +437,6 @@ private fun DisplayNameInput(
         )
 
         displayNameState.errorMessage?.let { error ->
-            TextFieldError(textError = error)
-        }
-    }
-}
-
-
-@Composable
-private fun PhoneNumberInput(
-    modifier: Modifier = Modifier,
-    phoneNumberState: TextFieldState,
-    onValueChange: (text: String) -> Unit = {},
-    enableCharacterCounter: Boolean = false,
-    provideFocusRequester: () -> FocusRequester = { FocusRequester() },
-) {
-    val focusManager = LocalFocusManager.current
-    val mergedTextStyle = MaterialTheme.typography
-        .bodyMedium
-
-    Column(
-        modifier = modifier
-            .padding(horizontal = insetMedium, vertical = insetSmall),
-    ) {
-        Text(
-            text = buildAnnotatedString {
-                append("Phone Number")
-                withStyle(
-                    style = SpanStyle(
-                        baselineShift = BaselineShift(0.2f),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    append("*")
-                }
-            },
-            style = MaterialTheme.typography.titleMedium,
-        )
-
-        OutlinedTextField(
-            value = phoneNumberState.text,
-            onValueChange = { text ->
-                phoneNumberState.text = text.take(PhoneNumberLength)
-                onValueChange(phoneNumberState.text)
-            },
-            placeholder = {
-                Text(
-                    text = "Enter number",
-                    style = mergedTextStyle.copy(color = TextSecondary)
-                )
-            },
-            keyboardOptions = KeyboardOptions.Default
-                .copy(
-                    capitalization = KeyboardCapitalization.None,
-                    imeAction = ImeAction.Next,
-                    keyboardType = KeyboardType.Phone
-                ),
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
-            ),
-            /*supportingText = {
-                if (enableCharacterCounter) {
-                    val count = storeNameState.text.length
-                    Text(
-                        text = "$count/20",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Normal, color = TextSecondary),
-                        textAlign = TextAlign.End,
-                        modifier = Modifier.exposeBounds()
-                            .fillMaxWidth()
-                    )
-                }
-            },*/
-            textStyle = mergedTextStyle,
-            maxLines = 1,
-            shape = RoundedCornerShape(cornerSizeMedium),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-            ),
-            isError = phoneNumberState.showErrors(),
-            modifier = Modifier
-                .fillMaxWidth()
-                .focusRequester(provideFocusRequester())
-                .onFocusChanged { focusState ->
-                    phoneNumberState.onFocusChange(focusState.isFocused)
-                    if (!focusState.isFocused) {
-                        phoneNumberState.enableShowErrors()
-                    }
-                }
-                .padding(vertical = insetVerySmall),
-        )
-
-        phoneNumberState.getError()?.let { error ->
             TextFieldError(textError = error)
         }
     }
@@ -695,100 +534,9 @@ private fun DescriptionInput(
 }
 
 @Composable
-private fun AddressInput(
-    modifier: Modifier = Modifier,
-    addressState: TextFieldState,
-    onValueChange: (text: String) -> Unit = {},
-    enableCharacterCounter: Boolean = false,
-    provideFocusRequester: () -> FocusRequester = { FocusRequester() },
-) {
-    val focusManager = LocalFocusManager.current
-    val mergedTextStyle = MaterialTheme.typography
-        .bodyMedium
-
-    Column(
-        modifier = modifier
-            .padding(horizontal = insetMedium, vertical = insetSmall),
-    ) {
-        Text(
-            text = buildAnnotatedString {
-                append("Address")
-                withStyle(
-                    style = SpanStyle(
-                        fontStyle = FontStyle.Italic,
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-                ) {
-                    append(" (Optional)")
-                }
-            },
-            style = MaterialTheme.typography.titleMedium,
-        )
-
-        OutlinedTextField(
-            value = addressState.text,
-            onValueChange = { text ->
-                addressState.text = text.take(AddressLength)
-                onValueChange(addressState.text)
-            },
-            placeholder = {
-                Text(
-                    text = "I'm so cool!",
-                    style = mergedTextStyle.copy(color = TextSecondary)
-                )
-            },
-            keyboardOptions = KeyboardOptions.Default
-                .copy(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next),
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
-            ),
-            supportingText = {
-                if (enableCharacterCounter) {
-                    val count = addressState.text.length
-                    Text(
-                        text = "$count/$AddressLength",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.Normal,
-                            color = TextSecondary
-                        ),
-                        textAlign = TextAlign.End,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                    )
-                }
-            },
-            textStyle = mergedTextStyle,
-            maxLines = 1,
-            shape = RoundedCornerShape(cornerSizeMedium),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-            ),
-            isError = addressState.showErrors(),
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 120.dp)
-                .focusRequester(provideFocusRequester())
-                .onFocusChanged { focusState ->
-                    addressState.onFocusChange(focusState.isFocused)
-                    if (!focusState.isFocused) {
-                        addressState.enableShowErrors()
-                    }
-                }
-        )
-
-        addressState.getError()?.let { error ->
-            TextFieldError(textError = error)
-        }
-    }
-}
-
-@Composable
 private fun Footer(
     modifier: Modifier = Modifier,
-    text: String = "Add Party",
+    text: String = "Add Category",
     enabled: Boolean = true,
     onClick: () -> Unit = {},
 ) {
@@ -822,13 +570,13 @@ private fun Footer(
 )
 @ThemePreviews
 @Composable
-private fun AddPartyScreenPreview() {
+private fun AddCategoryScreenPreview() {
     HandbookTheme(
         androidTheme = true,
         disableDynamicTheming = true
     ) {
-        AddPartyScreen(
-            uiState = AddPartyUiState.AddPartyForm("", "", "", ""),
+        AddCategoryScreen(
+            uiState = AddCategoryUiState.AddCategoryForm("", ""),
             uiAction = {},
             isInEditMode = true
         )

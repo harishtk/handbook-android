@@ -160,6 +160,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     /* Kotlinx Serialization */
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.datetime)
 
     /* Hilt */
     implementation(libs.hilt.android)

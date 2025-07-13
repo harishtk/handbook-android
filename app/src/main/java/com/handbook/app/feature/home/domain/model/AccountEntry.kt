@@ -14,4 +14,28 @@ data class AccountEntry(
     val categoryId: Long,
     val createdAt: Long = Instant.now().toEpochMilli(),
     val updatedAt: Long = Instant.now().toEpochMilli()
-)
+) {
+    companion object {
+        fun create(
+            id: Long = 0,
+            title: String,
+            description: String? = null,
+            amount: Double,
+            entryType: EntryType,
+            transactionType: TransactionType,
+            transactionDate: Long = Instant.now().toEpochMilli(),
+            partyId: Long? = null,
+            categoryId: Long,
+        ) = AccountEntry(
+            entryId = id,
+            title = title,
+            description = description,
+            amount = amount,
+            entryType = entryType,
+            transactionType = transactionType,
+            transactionDate = transactionDate,
+            partyId = partyId,
+            categoryId = categoryId
+        )
+    }
+}
