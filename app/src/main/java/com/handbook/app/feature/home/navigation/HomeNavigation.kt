@@ -48,11 +48,11 @@ const val profileNavigationRoute = "profile_route/{$USER_ID_ARG}"
 const val searchNavigationRoute = "search_route"
 const val notificationsNavigationRoute = "notification_route"
 
-const val allPartiesNavigationRoute = "all_parties_route"
 const val PARTY_ID_ARG = "partyId"
-const val addPartyNavigationRoute = "add_party_route/{$PARTY_ID_ARG}"
-
 const val PICKER_MODE_ARG = "pickerMode"
+const val allPartiesNavigationRoute = "all_parties_route?partyId={$PARTY_ID_ARG}?pickerMode={$PICKER_MODE_ARG}"
+
+const val addPartyNavigationRoute = "add_party_route/{$PARTY_ID_ARG}"
 const val CATEGORY_ID_ARG = "categoryId"
 const val allCategoriesNavigationRoute = "all_categories_route?categoryId={$CATEGORY_ID_ARG}?pickerMode={$PICKER_MODE_ARG}"
 const val addCategoryNavigationRoute = "add_category_route/{$CATEGORY_ID_ARG}"
@@ -96,9 +96,13 @@ fun NavController.navigateToNotifications(
 }
 
 fun NavController.navigateToAllParties(
+    partyId: Long = 0L,
+    isInPickerMode: Boolean = false,
     navOptions: NavOptions? = null
 ) {
-    this.navigate(allPartiesNavigationRoute, navOptions)
+    this.navigate(allPartiesNavigationRoute
+        .replace("{$PARTY_ID_ARG}", partyId.toString())
+        .replace("{$PICKER_MODE_ARG}", isInPickerMode.toString()), navOptions)
 }
 
 fun NavController.navigateToAddParty(
@@ -175,6 +179,11 @@ fun NavGraphBuilder.homeScreen(
         val sharedViewModel = it.sharedViewModel<SharedViewModel>(navController)
         HomeRoute(
             sharedViewModel = sharedViewModel,
+            onAddEntryRequest = { transactionType ->
+                navController.navigateToAddAccountEntry(
+                    transactionType = transactionType.name
+                )
+            },
             onWritePostRequest = {
                 navController.navigateToAddAccountEntry()
             },
@@ -246,6 +255,11 @@ fun NavGraphBuilder.homeGraph(
             val sharedViewModel = it.sharedViewModel<SharedViewModel>(navController)
             HomeRoute(
                 sharedViewModel = sharedViewModel,
+                onAddEntryRequest = { transactionType ->
+                    navController.navigateToAddAccountEntry(
+                        transactionType = transactionType.name
+                    )
+                },
                 onWritePostRequest = {
                     navController.navigateToAddAccountEntry()
                 },
@@ -263,11 +277,21 @@ fun NavGraphBuilder.homeGraph(
 
         composable(
             route = allPartiesNavigationRoute,
-            /* TODO: add deep links and other args here */
+            arguments = listOf(
+                navArgument(PARTY_ID_ARG) {
+                    type = NavType.LongType
+                    defaultValue = 0L
+                },
+                navArgument(PICKER_MODE_ARG) {
+                    type = NavType.BoolType
+                    defaultValue = false
+                }
+            )
         ) {
             val sharedViewModel = it.sharedViewModel<SharedViewModel>(navController)
             AllPartiesRoute(
                 onNavUp = { navController.navigateUp() },
+                navController = navController,
                 onAddPartyRequest = { partyId ->
                     navController.navigateToAddParty(partyId = partyId?.toString())
                 }
@@ -345,6 +369,9 @@ fun NavGraphBuilder.homeGraph(
                 onNextPage = { navController.navigateUp() },
                 onSelectCategoryRequest = { categoryId ->
                     navController.navigateToAllCategories(categoryId, true)
+                },
+                onSelectPartyRequest = { partyId ->
+                    navController.navigateToAllParties(partyId, true)
                 }
             )
         }

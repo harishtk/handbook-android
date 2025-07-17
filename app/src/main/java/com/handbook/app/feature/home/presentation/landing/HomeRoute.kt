@@ -1,4 +1,5 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
+
 
 package com.handbook.app.feature.home.presentation.landing
 
@@ -26,17 +27,22 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Circle
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NorthEast
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.SouthWest
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -46,7 +52,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -58,24 +63,42 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemContentType
+import androidx.paging.compose.itemKey
+import com.handbook.app.ObserverAsEvents
+import com.handbook.app.R
+import com.handbook.app.SharedViewModel
+import com.handbook.app.core.designsystem.HandbookIcons
+import com.handbook.app.feature.home.domain.model.AccountEntryFilters
+import com.handbook.app.feature.home.domain.model.Post
+import com.handbook.app.feature.home.domain.model.TransactionType
+import com.handbook.app.feature.home.domain.model.UserSummary
+import com.handbook.app.feature.home.presentation.accounts.components.ExpandableAccountEntryCard
+import com.handbook.app.feature.home.presentation.accounts.components.FabOption
+import com.handbook.app.feature.home.presentation.accounts.components.OnMainFabClickBehavior
+import com.handbook.app.feature.home.presentation.accounts.components.SpeedDialFab
+import com.handbook.app.feature.home.presentation.profile.FullScreenErrorLayout
+import com.handbook.app.ui.spacerSizeTiny
+import com.handbook.app.ui.theme.DarkGreen
+import com.handbook.app.ui.theme.DarkRed
+import com.handbook.app.ui.theme.HandbookTheme
+import com.handbook.app.ui.theme.MaterialColor.Red50
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import com.handbook.app.ObserverAsEvents
-import com.handbook.app.SharedViewModel
-import com.handbook.app.feature.home.domain.model.Post
-import com.handbook.app.feature.home.domain.model.UserSummary
-import com.handbook.app.feature.home.presentation.profile.FullScreenErrorLayout
-import com.handbook.app.ui.spacerSizeTiny
-import com.handbook.app.ui.theme.HandbookTheme
-import com.handbook.app.ui.theme.MaterialColor.Red50
+import kotlin.time.ExperimentalTime
 
 @Composable
 internal fun HomeRoute(
@@ -83,6 +106,7 @@ internal fun HomeRoute(
     sharedViewModel: SharedViewModel,
     viewModel: HomeViewModel = hiltViewModel(),
     onWritePostRequest: () -> Unit,
+    onAddEntryRequest: (TransactionType) -> Unit,
     onNavigateToProfile: (String) -> Unit,
     onNavigateToPost: (String) -> Unit,
     onNavigateToNotifications: () -> Unit,
@@ -90,14 +114,14 @@ internal fun HomeRoute(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    val feedUiState by viewModel.feedUiState.collectAsStateWithLifecycle()
+    val accountEntriesUiState by viewModel.accountEntriesUiState.collectAsStateWithLifecycle()
 
     HomeScreen(
         modifier = modifier,
-        feedUiState = feedUiState,
+        entriesUiState = accountEntriesUiState,
         snackbarHostState = snackbarHostState,
         uiAction = viewModel.accept,
-        onFABClick = onWritePostRequest,
+        onFabClick = onAddEntryRequest,
         onNavigateToNotifications = onNavigateToNotifications
     )
 
@@ -108,19 +132,12 @@ internal fun HomeRoute(
 
     ObserverAsEvents(viewModel.uiEvent) {
         when (it) {
-            is HomeUiEvent.NavigateToProfile -> {
-                onNavigateToProfile(
-                    if (it.isSelf) "" else it.userId
-                )
-            }
-            is HomeUiEvent.NavigateToPost -> {
-                onNavigateToPost(it.postId)
-            }
             is HomeUiEvent.ShowSnackbar -> {
                 scope.launch {
                     snackbarHostState.showSnackbar(it.message.asString(context))
                 }
             }
+
             is HomeUiEvent.ShowToast -> {
                 Toast.makeText(context, it.message.asString(context), Toast.LENGTH_SHORT).show()
             }
@@ -131,169 +148,76 @@ internal fun HomeRoute(
 @Composable
 internal fun HomeScreen(
     modifier: Modifier = Modifier,
-    feedUiState: FeedUiState = FeedUiState.Idle,
+    entriesUiState: AccountEntryUiState = AccountEntryUiState.Idle,
     snackbarHostState: SnackbarHostState = SnackbarHostState(),
     uiAction: (HomeUiAction) -> Unit = {},
-    onFABClick: () -> Unit = {},
+    onFabClick: (TransactionType) -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
 ) {
 
     // This code should be called when UI is ready for use and relates to Time To Full Display.
     ReportDrawnWhen { true /* Add custom conditions here. eg. !isSyncing */ }
 
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    // val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     Scaffold(
         modifier = modifier
-            .fillMaxSize()
-            .nestedScroll(scrollBehavior.nestedScrollConnection),
+            .fillMaxSize(),
+            //.nestedScroll(scrollBehavior.nestedScrollConnection),
         snackbarHost = { SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding()) },
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            TopAppBar(
-                title = { Text(text = "Hoots", style = MaterialTheme.typography.titleLarge) },
-                scrollBehavior = scrollBehavior,
-                actions = {
-                    IconButton(
-                        onClick = onNavigateToNotifications
-                    ) {
-                        Box {
-                            Icon(
-                                imageVector = Icons.Default.Notifications,
-                                contentDescription = "Notifications",
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                            Icon(
-                                imageVector = Icons.Default.Circle,
-                                contentDescription = "Unread",
-                                tint = Color.Red,
-                                modifier = Modifier
-                                    .size(12.dp)
-                                    .align(Alignment.TopEnd)
-                                    .background(MaterialTheme.colorScheme.surface, CircleShape)
-                                    .padding(2.dp)
-                            )
-                        }
-                    }
+        floatingActionButton = {
+            val fabOptions = listOf(
+                FabOption(Icons.Default.SouthWest, DarkGreen,  "Add Income") {
+                    onFabClick(TransactionType.INCOME)
+                },
+                FabOption(Icons.Default.NorthEast, DarkRed, "Add Expense") {
+                    onFabClick(TransactionType.EXPENSE)
+                },
+            )
+
+            SpeedDialFab(
+                initialIcon = Icons.Default.Add,
+                expandedIcon = Icons.Default.Close,
+                options = fabOptions,
+                onMainFabClickBehavior = OnMainFabClickBehavior.EXPAND_ONLY_OR_EXECUTE_PRIMARY_WHEN_COLLAPSED,
+                onMainFabClickWhileCollapsed = {
+                        
                 }
             )
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onFABClick,
-            ) {
-                Row(
-                    verticalAlignment = CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(imageVector = Icons.Default.Edit, contentDescription = "Write post",
-                        Modifier.size(16.dp))
-                    Text(text = "Write", style = MaterialTheme.typography.labelLarge)
-                }
-            }
         }
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .consumeWindowInsets(innerPadding)
-                .windowInsetsPadding(
-                    WindowInsets.safeDrawing.only(
-                        WindowInsetsSides.Vertical
-                    )
-                ),
+                .consumeWindowInsets(innerPadding),
         ) {
-            PullToRefreshBox(
-                isRefreshing = (feedUiState is FeedUiState.Success && feedUiState.isRefreshing),
-                onRefresh = { uiAction(HomeUiAction.Refresh) },
-                modifier = Modifier.weight(1f)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    // .verticalScroll(rememberScrollState())
+                    .imePadding(),
+                verticalArrangement = Arrangement.Top,
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        // .verticalScroll(rememberScrollState())
-                        .imePadding(),
-                ) {
-                    when (feedUiState) {
-                        FeedUiState.Idle -> {}
-                        FeedUiState.Loading -> {
-                            LoadingScreen()
-                        }
-
-                        is FeedUiState.Error -> {
-                            FullScreenErrorLayout(
-                                errorMessage = feedUiState.errorMessage,
-                                onClick = { uiAction(HomeUiAction.Refresh) }
-                            )
-                        }
-
-                        is FeedUiState.Success -> {
-                            FeedContent(
-                                feeds = feedUiState,
-                                uiAction = uiAction,
-                            )
-                        }
+                when (entriesUiState) {
+                    is AccountEntryUiState.Error -> {
+                        FullScreenErrorLayout(
+                            errorMessage = entriesUiState.errorMessage,
+                            onClick = { uiAction(HomeUiAction.Refresh) }
+                        )
+                    }
+                    AccountEntryUiState.Idle -> {}
+                    AccountEntryUiState.Loading -> {
+                        LoadingScreen()
+                    }
+                    is AccountEntryUiState.Success -> {
+                        SearchResultContent(
+                            uiState = entriesUiState,
+                        )
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun FeedContent(
-    modifier: Modifier = Modifier,
-    feeds: FeedUiState.Success,
-    uiAction: (HomeUiAction) -> Unit = {},
-) {
-    val userMap = remember(feeds.users) {
-        feeds.users.associateBy { it.id }
-    }
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 16.dp),
-    ) {
-        val listState = rememberLazyListState()
-
-        LaunchedEffect(listState) {
-            snapshotFlow { listState.layoutInfo.visibleItemsInfo }
-                .map { visible -> visible.lastOrNull()?.index ?: 0 }
-                .distinctUntilChanged()
-                .collect { lastVisible ->
-                    val total = listState.layoutInfo.totalItemsCount
-                    if (lastVisible >= total - 3) {
-                        if (!feeds.endOfPaginationReached) {
-                            uiAction(HomeUiAction.LoadMore)
-                        }
-                    }
-                }
-        }
-
-        LazyColumn(
-            state = listState
-        ) {
-            items(feeds.posts) { post ->
-                val author = userMap[post.authorId]!!
-
-                PostCard(
-                    post = post,
-                    author = author,
-                    onLikeToggle = {
-                        uiAction(HomeUiAction.LikeToggle(post.id, it))
-                    },
-                    onUserProfileClick = {
-                        uiAction(HomeUiAction.NavigateToProfile(author.id))
-                    },
-                    onPostClick = {
-                        uiAction(HomeUiAction.NavigateToPost(post.id))
-                    }
-                )
-            }
-            item { Spacer(Modifier.height(spacerSizeTiny)) }
         }
     }
 }
@@ -330,7 +254,10 @@ private fun PostCard(
                     )
                     Column(modifier = Modifier.padding(start = 8.dp)) {
                         Text(text = author.displayName, style = MaterialTheme.typography.titleSmall)
-                        Text(text = "@${author.username}", style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            text = "@${author.username}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
                     }
                 }
             }
@@ -363,6 +290,126 @@ private fun PostCard(
 }
 
 @Composable
+private fun SearchResultContent(
+    modifier: Modifier = Modifier,
+    uiState: AccountEntryUiState.Success,
+    listState: LazyListState = rememberLazyListState(),
+) {
+    LocalContext.current
+
+    Column(
+        modifier
+            .fillMaxSize()
+            .padding(horizontal = 8.dp)
+    ) {
+        val lazyPagingItems: LazyPagingItems<AccountEntryUiModel> = uiState.accountEntries.collectAsLazyPagingItems()
+
+        // After the initial load or a refresh, itemCount will reflect the loaded items.
+        // It's important to also consider the load states for a complete picture.
+        LaunchedEffect(lazyPagingItems.loadState) {
+            if (lazyPagingItems.loadState.refresh is LoadState.NotLoading &&
+                lazyPagingItems.itemCount == 0) {
+                // PagingData is effectively empty after the initial load/refresh
+                // Show "No items found" message or similar UI
+            }
+        }
+
+        if (lazyPagingItems.loadState.refresh is LoadState.Loading) {
+            LoadingIndicator()
+        } else if (lazyPagingItems.itemCount == 0) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+            ) {
+                if (uiState.filters != AccountEntryFilters.None) {
+                    Text("No entries found", style = MaterialTheme.typography.headlineSmall)
+                } else {
+                    Text("No entries yet", style = MaterialTheme.typography.headlineSmall)
+                }
+            }
+        } else {
+            LazyColumn(state = listState,) {
+                items(
+                    count = lazyPagingItems.itemCount,
+                    key = lazyPagingItems.itemKey {
+                        when (it) {
+                            is AccountEntryUiModel.Item -> it.accountEntryWithDetails.entry.entryId
+                            is AccountEntryUiModel.Separator -> it.date
+                        }
+                    },
+                    contentType = lazyPagingItems.itemContentType { "accountEntry" }, // Generic content type
+                ) { index ->
+                    val item = lazyPagingItems[index]
+                    if (item != null) {
+                        when (item) {
+                            is AccountEntryUiModel.Item -> {
+                                ExpandableAccountEntryCard(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                    entryDetails = item.accountEntryWithDetails,
+                                    onEdit = {},
+                                    onDelete = {}
+                                )
+                            }
+
+                            is AccountEntryUiModel.Separator -> {
+                                Box(
+                                    modifier = Modifier
+                                        .animateItem()
+                                        .padding(vertical = 8.dp)
+                                        .fillMaxWidth()
+                                ) {
+                                    Text(text = item.text, style = MaterialTheme.typography.labelMedium)
+                                }
+                            }
+                        }
+                    }
+                }
+
+
+                when (lazyPagingItems.loadState.append) {
+                    is LoadState.Error -> {
+                        item { ErrorRetryItem(Modifier.animateItem()) { lazyPagingItems.retry() } }
+                    }
+                    LoadState.Loading -> {
+                        item { LoadingIndicator(Modifier.animateItem()) }
+                    }
+                    is LoadState.NotLoading -> {
+                        if (lazyPagingItems.loadState.append.endOfPaginationReached) {
+                            // Also empty if pagination ended and count is 0
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoadingIndicator(modifier: Modifier = Modifier) {
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+        CircularProgressIndicator(
+            modifier = modifier.size(24.dp),
+            color = Color.Gray,
+            strokeWidth = 2.dp,
+        )
+    }
+}
+
+@Composable
+private fun ErrorRetryItem(modifier: Modifier = Modifier, onRetry: () -> Unit) {
+    Box(modifier = modifier.fillMaxWidth()) {
+        ElevatedButton(
+            onClick = onRetry,
+            modifier = Modifier.align(Alignment.Center)
+        ) {
+            Text(text = "Retry")
+        }
+    }
+}
+
+@Composable
 fun UserAvatar(modifier: Modifier, profile: UserSummary) {
     TODO("Not yet implemented")
 }
@@ -377,69 +424,6 @@ private fun LoadingScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         CircularProgressIndicator()
-    }
-}
-
-@Preview
-@Composable
-private fun HomeDefaultPreview() {
-    Box(
-        Modifier.background(Color.White)
-    ) {
-        HandbookTheme(
-            darkTheme = false,
-            disableDynamicTheming = false,
-        ) {
-            HomeScreen(
-                feedUiState = FeedUiState.Success(
-                    posts = listOf(
-                        Post(
-                            id = "1",
-                            authorId = "1",
-                            content = "This is a sample post content.",
-                            createdAt = "2023-09-10T12:00:00Z",
-                            updatedAt = "2023-09-10T12:00:00Z",
-                            likesCount = 10,
-                            likedByCurrentUser = true
-                        ),
-                    ),
-                    users = listOf(
-                        UserSummary(
-                            id = "1",
-                            username = "john_doe",
-                            displayName = "John Doe",
-                            profilePictureId = "",
-                            isFollowing = false,
-                        )
-                    )
-                )
-            )
-        }
-    }
-}
-
-@Preview
-@Composable
-private fun FeedContentPreview() {
-    HandbookTheme {
-        PostCard(
-            post = Post(
-                id = "1",
-                authorId = "1",
-                content = "This is a sample post content.",
-                createdAt = "2023-09-10T12:00:00Z",
-                updatedAt = "2023-09-10T12:00:00Z",
-                likesCount = 10,
-                likedByCurrentUser = true
-            ),
-            author = UserSummary(
-                id = "1",
-                username = "john_doe",
-                displayName = "John Doe",
-                profilePictureId = "",
-                isFollowing = false,
-            )
-        )
     }
 }
 

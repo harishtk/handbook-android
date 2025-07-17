@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
 import androidx.paging.LoadState
 import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
@@ -84,6 +85,7 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun AllPartiesRoute(
     modifier: Modifier = Modifier,
+    navController: NavController,
     viewModel: AllPartiesViewModel = hiltViewModel(),
     onNavUp: () -> Unit,
     onAddPartyRequest: (partyId: Long?) -> Unit,
@@ -94,6 +96,7 @@ internal fun AllPartiesRoute(
     val listState = rememberLazyListState()
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isInPickerMode by viewModel.isInPickerMode.collectAsStateWithLifecycle()
 
     AllPartiesScreen(
         modifier = modifier,
@@ -116,7 +119,13 @@ internal fun AllPartiesRoute(
                 Toast.makeText(context, it.message.asString(context), Toast.LENGTH_SHORT).show()
             }
             is AllPartiesUiEvent.NavigateToEditParty -> {
-                onAddPartyRequest(it.partyId)
+                if (isInPickerMode) {
+                    navController.previousBackStackEntry?.savedStateHandle
+                        ?.set("partyId", it.partyId)
+                    navController.popBackStack()
+                } else {
+                    onAddPartyRequest(it.partyId)
+                }
             }
         }
     }

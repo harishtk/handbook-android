@@ -110,6 +110,7 @@ import com.handbook.app.core.designsystem.component.text.TextFieldState
 import com.handbook.app.core.designsystem.component.text.TextFieldStateHandler
 import com.handbook.app.feature.home.domain.model.Category
 import com.handbook.app.feature.home.domain.model.EntryType
+import com.handbook.app.feature.home.domain.model.Party
 import com.handbook.app.feature.home.domain.model.TransactionType
 import com.handbook.app.feature.home.presentation.accounts.components.SimpleButtonGroup
 import com.handbook.app.feature.home.presentation.accounts.components.SimpleDropDownPicker
@@ -140,7 +141,8 @@ internal fun AddAccountRoute(
     navController: NavHostController,
     viewModel: AddAccountViewModel = hiltViewModel(),
     onNextPage: () -> Unit = {},
-    onSelectCategoryRequest: (selectedCategoryId: Long) -> Unit
+    onSelectCategoryRequest: (selectedCategoryId: Long) -> Unit,
+    onSelectPartyRequest: (selectedPartyId: Long) -> Unit = {}
 ) {
     val context = LocalContext.current
 
@@ -193,6 +195,10 @@ internal fun AddAccountRoute(
                 context.showToast("Navigating to category: ${event.categoryId}")
                 onSelectCategoryRequest(event.categoryId)
             }
+            is AddAccountUiEvent.NavigateToPartySelection -> {
+                context.showToast("Navigating to party: ${event.partyId}")
+                onSelectPartyRequest(event.partyId)
+            }
         }
     }
 
@@ -203,9 +209,16 @@ internal fun AddAccountRoute(
 
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) { // Or another appropriate lifecycle event
+                // Extract slected Category Id
                 savedStateHandle?.get<Long>("categoryId")?.let { result ->
                     viewModel.accept(AddAccountUiAction.OnCategoryToggle(result))
                     savedStateHandle.remove<Long>("categoryId")
+                }
+
+                // Extract selected Party Id
+                savedStateHandle?.get<Long?>("partyId")?.let { result ->
+                    viewModel.accept(AddAccountUiAction.OnPartyToggle(result))
+                    savedStateHandle.remove<Long>("partyId")
                 }
             }
         }
@@ -392,36 +405,50 @@ private fun ColumnScope.AddAccountFormLayout(
             )
 
             // Add a date picker and simplepicker for parties
-            Column(
-                modifier = modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
-                    .expandable(
-                        expanded = showDatePickerDialog,
-                        onExpandedChange = { showDatePickerDialog = !showDatePickerDialog },
-                        expandedDescription = "Show date picker",
-                        collapsedDescription = "Hide date picker",
-                        toggleDescription = "Toggle date picker"
-                    ),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                OutlinedTextField(
-                    value = selectedDateMillis.toFormattedDateString(),
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Date") },
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = false)
-                    },
-                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                    ),
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)
+                        .expandable(
+                            expanded = showDatePickerDialog,
+                            onExpandedChange = { showDatePickerDialog = !showDatePickerDialog },
+                            expandedDescription = "Show date picker",
+                            collapsedDescription = "Hide date picker",
+                            toggleDescription = "Toggle date picker"
+                        ),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    OutlinedTextField(
+                        value = selectedDateMillis.toFormattedDateString(),
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Date") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = false)
+                        },
+                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                        ),
+                        modifier = Modifier
+                    )
+                }
+
+                PartyInput(
+                    modifier = Modifier.weight(1f)
+                        .padding(start = 8.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+                    party = uiState.party,
+                    onClick = {
+                        uiAction(AddAccountUiAction.OnPartySelectRequest(uiState.party?.id ?: 0L))
+                    }
                 )
             }
 
@@ -881,6 +908,46 @@ private fun CategoryInput(
 }
 
 @Composable
+private fun PartyInput(
+    modifier: Modifier = Modifier,
+    party: Party? = null,
+    onClick: () -> Unit,
+    provideFocusRequester: () -> FocusRequester = { FocusRequester() },
+) {
+    Column(
+        modifier
+            .expandable(
+                expanded = true,
+                onExpandedChange = {
+                    onClick()
+                },
+                expandedDescription = "Show party picker",
+                collapsedDescription = "Hide party picker",
+                toggleDescription = "Toggle party picker"
+            )
+    ) {
+        OutlinedTextField(
+            value = party?.name ?: "Select party",
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Party") },
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = false)
+            },
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(provideFocusRequester())
+        )
+    }
+}
+
+@Composable
 private fun Footer(
     modifier: Modifier = Modifier,
     text: String = "Add Entry",
@@ -961,11 +1028,44 @@ private fun TransactionTypeSelector(
     onToggle: (AddAccountUiAction.OnTransactionTypeToggle) -> Unit,
 ) {
     val options = TransactionType.entries.map { it.name }
+    var selectedOption by remember(uiState.transactionType) { mutableStateOf(uiState.transactionType.name) }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        SimpleDropDownPicker(
+            modifier = Modifier.fillMaxWidth(),
+            label = "Transaction Type",
+            options = options,
+            selectedOption = selectedOption,
+            selectedOptionContent = {
+                TransactionTypeView(transactionType = TransactionType.fromString(selectedOption))
+            },
+            onOptionSelected = {
+                selectedOption = it
+                onToggle(AddAccountUiAction.OnTransactionTypeToggle(TransactionType.fromString(it)))
+            },
+            dropDownContentForOption = { option ->
+                TransactionTypeView(Modifier.fillMaxWidth(), transactionType = TransactionType.fromString(option))
+            }
+        )
+    }
+}
+
+@Composable
+private fun TransactionTypeSelector2(
+    modifier: Modifier = Modifier,
+    uiState: AddAccountUiState.AddAccountForm,
+    onToggle: (AddAccountUiAction.OnTransactionTypeToggle) -> Unit,
+) {
+    val options = TransactionType.entries.map { it.name }
     var selectedOption by remember { mutableStateOf(uiState.transactionType.name) }
 
     Column(
         modifier = Modifier
-            .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -982,7 +1082,7 @@ private fun TransactionTypeSelector(
             },
             dropDownContentForOption = { option ->
                 TransactionTypeView(Modifier.fillMaxWidth(), transactionType = TransactionType.fromString(option))
-            }
+            },
         )
     }
 }
@@ -1156,6 +1256,14 @@ private fun TransactionTypeViewPreview() {
             TransactionTypeView(Modifier.fillMaxWidth(), transactionType = TransactionType.INCOME)
             TransactionTypeView(Modifier.fillMaxWidth(), transactionType = TransactionType.EXPENSE)
             TransactionTypeView(Modifier.fillMaxWidth(), transactionType = TransactionType.TRANSFER)
+
+            Spacer(Modifier.height(16.dp))
+
+            TransactionTypeSelector2(
+                uiState = AddAccountUiState.AddAccountForm("", "", transactionType = TransactionType.INCOME),
+            ) {
+
+            }
         }
     }
 }

@@ -8,4 +8,8 @@ data class AccountEntryFilters(
     val startDate: Long? = null,
     val endDate: Long? = null,
     val titleQuery: String? = null
-)
+) {
+    companion object {
+        val None = AccountEntryFilters()
+    }
+}

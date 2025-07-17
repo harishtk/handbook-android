@@ -59,6 +59,7 @@ class AddAccountViewModel @Inject constructor(
     val accountEntryId = savedStateHandle.getStateFlow("accountEntryId", "")
     val transactionType = savedStateHandle.getStateFlow("transactionType", "")
     val categoryId = savedStateHandle.getStateFlow("categoryId", 0L)
+    val partyId = savedStateHandle.getStateFlow("partyId", 0L)
 
     private val _uiEvent = MutableSharedFlow<AddAccountUiEvent>()
     val uiEvent = _uiEvent.asSharedFlow()
@@ -129,6 +130,37 @@ class AddAccountViewModel @Inject constructor(
                 )
             }
             .launchIn(viewModelScope)
+
+        partyId.mapLatest { pid ->
+            if (pid != 0L) {
+                accountsRepository.getParty(pid)
+            } else {
+                null
+            }
+        }.onEach { result ->
+            if (result != null) {
+                result?.fold(
+                    onFailure = { exception ->
+                    },
+                    onSuccess = { party ->
+                        Timber.d("Selected: party=$party")
+                        viewModelState.update { state ->
+                            state.copy(
+                                partyId = party.id,
+                                party = party
+                            )
+                        }
+                    }
+                )
+            } else {
+                viewModelState.update { state ->
+                    state.copy(
+                        partyId = null,
+                        party = null
+                    )
+                }
+            }
+        }.launchIn(viewModelScope)
     }
 
     private fun onUiAction(action: AddAccountUiAction) {
@@ -205,6 +237,14 @@ class AddAccountViewModel @Inject constructor(
 
             is AddAccountUiAction.OnCategorySelectRequest -> {
                 sendEvent(AddAccountUiEvent.NavigateToCategorySelection(action.categoryId))
+            }
+
+            is AddAccountUiAction.OnPartyToggle -> {
+                savedStateHandle["partyId"] = action.partyId
+            }
+
+            is AddAccountUiAction.OnPartySelectRequest -> {
+                sendEvent(AddAccountUiEvent.NavigateToPartySelection(action.partyId ?: 0L))
             }
         }
     }
@@ -388,6 +428,7 @@ sealed interface AddAccountUiAction {
     data class OnEntryTypeToggle(val entryType: EntryType) : AddAccountUiAction
     data class OnTransactionTypeToggle(val transactionType: TransactionType) : AddAccountUiAction
     data class OnCategoryToggle(val categoryId: Long) : AddAccountUiAction
+    data class OnPartyToggle(val partyId: Long?) : AddAccountUiAction
     data class Submit(
         val name: String,
         val description: String,
@@ -401,10 +442,12 @@ sealed interface AddAccountUiAction {
     data object Reset : AddAccountUiAction
     data object DeleteAccountEntry : AddAccountUiAction
     data class OnCategorySelectRequest(val categoryId: Long) : AddAccountUiAction
+    data class OnPartySelectRequest(val partyId: Long?) : AddAccountUiAction
 }
 
 sealed interface AddAccountUiEvent {
     data class ShowToast(val message: UiText) : AddAccountUiEvent
     data object OnNavUp : AddAccountUiEvent
     data class NavigateToCategorySelection(val categoryId: Long) : AddAccountUiEvent
+    data class NavigateToPartySelection(val partyId: Long) : AddAccountUiEvent
 }

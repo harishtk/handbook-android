@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.Wallpapers
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.handbook.app.ui.theme.HandbookTheme
 
@@ -44,7 +46,7 @@ internal fun SimpleDropDownPicker(
     selectedOption: String,
     selectedOptionContent: @Composable () -> Unit = {},
     onOptionSelected: (String) -> Unit,
-    dropDownContentForOption: @Composable (String) -> Unit = {}
+    dropDownContentForOption: @Composable (String) -> Unit = {},
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -81,8 +83,7 @@ internal fun SimpleDropDownPicker(
                 .menuAnchor(
                     type = ExposedDropdownMenuAnchorType.PrimaryEditable,
                     enabled = true
-                )
-                .fillMaxWidth(),
+                ),
             textStyle = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onSurface),
             decorationBox = {
                 // Mimic OutlinedTextField's structure
@@ -107,7 +108,6 @@ internal fun SimpleDropDownPicker(
                     }
 
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {

@@ -42,6 +42,7 @@ class AllPartiesViewModel @Inject constructor(
 ) : ViewModel() {
 
     val searchQuery = savedStateHandle.getStateFlow(key = QUERY, initialValue = "")
+    val isInPickerMode = savedStateHandle.getStateFlow(key = "pickerMode", initialValue = false)
 
     private val _uiEvent = MutableSharedFlow<AllPartiesUiEvent>()
     val uiEvent = _uiEvent.asSharedFlow()

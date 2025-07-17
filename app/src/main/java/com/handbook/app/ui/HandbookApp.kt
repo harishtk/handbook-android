@@ -35,6 +35,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -60,10 +61,13 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.compose.rememberNavController
 import com.handbook.app.R
 import com.handbook.app.SharedViewModel
 import com.handbook.app.core.designsystem.HandbookIcons
@@ -74,13 +78,22 @@ import com.handbook.app.core.designsystem.component.HandbookGradientBackground
 import com.handbook.app.core.designsystem.component.HandbookNavigationBar
 import com.handbook.app.core.designsystem.component.HandbookNavigationBarItem
 import com.handbook.app.core.designsystem.component.HandbookTopAppBar
+import com.handbook.app.core.domain.model.DarkThemeConfig
+import com.handbook.app.core.domain.model.LoginUser
 import com.handbook.app.core.domain.model.ShopData
+import com.handbook.app.core.domain.model.ThemeBrand
+import com.handbook.app.core.domain.model.UserData
+import com.handbook.app.core.domain.repository.UserDataRepository
+import com.handbook.app.core.domain.usecase.UserAuthStateUseCase
 import com.handbook.app.core.util.NetworkMonitor
+import com.handbook.app.feature.home.navigation.HOME_GRAPH_ROUTE_PATTERN
 import com.handbook.app.navigation.HandbookNavHost
 import com.handbook.app.navigation.NavigationDrawerDestination
 import com.handbook.app.navigation.TopLevelDestination
 import com.handbook.app.ui.theme.GradientColors
 import com.handbook.app.ui.theme.LocalGradientColors
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import kotlin.math.abs
@@ -190,30 +203,30 @@ fun HandbookApp(
                         contentColor = MaterialTheme.colorScheme.onBackground,
                         contentWindowInsets = WindowInsets(0, 0, 0, 0),
                         snackbarHost = { SnackbarHost(snackbarHostState) },
-                        bottomBar = {
-                            AnimatedVisibility(
-                                visible = appState.shouldShowBottomBar,
-                                enter = slideInVertically(
-                                    initialOffsetY = { height ->
-                                        height / 2
-                                    }
-                                ),
-                                exit = slideOutVertically(
-                                    targetOffsetY = { height -> height },
-                                    animationSpec = tween(
-                                        durationMillis = 175,
-                                        easing = FastOutLinearInEasing
-                                    )
-                                ),
-                            ) {
-                                ShopsBottomBar(
-                                    destinations = appState.topLevelDestinations,
-                                    onNavigateToDestination = appState::navigateToTopLevelDestination,
-                                    currentDestination = appState.currentDestination,
-                                    modifier = Modifier.testTag("ShopsBottomBar"),
-                                )
-                            }
-                        },
+//                        bottomBar = {
+//                            AnimatedVisibility(
+//                                visible = appState.shouldShowBottomBar,
+//                                enter = slideInVertically(
+//                                    initialOffsetY = { height ->
+//                                        height / 2
+//                                    }
+//                                ),
+//                                exit = slideOutVertically(
+//                                    targetOffsetY = { height -> height },
+//                                    animationSpec = tween(
+//                                        durationMillis = 175,
+//                                        easing = FastOutLinearInEasing
+//                                    )
+//                                ),
+//                            ) {
+//                                ShopsBottomBar(
+//                                    destinations = appState.topLevelDestinations,
+//                                    onNavigateToDestination = appState::navigateToTopLevelDestination,
+//                                    currentDestination = appState.currentDestination,
+//                                    modifier = Modifier.testTag("ShopsBottomBar"),
+//                                )
+//                            }
+//                        },
                     ) { padding ->
                         val xPos = (abs(drawerWidth) - abs(contentOffset.value))
                         Row(
@@ -252,7 +265,7 @@ fun HandbookApp(
                                             .shadow(4.dp),
                                         title = @Composable {
                                             Text(
-                                                text = "Title",
+                                                text = "Timeline",
                                                 style = MaterialTheme.typography.titleMedium
                                                     .copy(fontWeight = FontWeight.W700)
                                             )

@@ -232,7 +232,7 @@ fun HandbookTheme(
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography = HandbookTypography,
+            // typography = HandbookTypography,
             content = content
         )
     }

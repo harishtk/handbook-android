@@ -55,9 +55,9 @@ import kotlinx.coroutines.launch
 import com.handbook.app.ObserverAsEvents
 import com.handbook.app.common.util.loadstate.LoadState
 import com.handbook.app.core.Noop
+import com.handbook.app.core.designsystem.component.UserAvatar
 import com.handbook.app.feature.home.domain.model.HandbookNotification
 import com.handbook.app.feature.home.domain.model.HandbookNotificationType
-import com.handbook.app.feature.home.presentation.landing.UserAvatar
 import com.handbook.app.feature.home.presentation.profile.FullScreenErrorLayout
 import com.handbook.app.ui.theme.Amber40
 import com.handbook.app.ui.theme.HandbookTheme
@@ -250,10 +250,7 @@ private fun NotificationItem(
             )
         }
         Box {
-            UserAvatar(
-                profile = notification.actor,
-                modifier = Modifier.size(32.dp)
-            )
+
             if (!notification.read) {
                 Icon(
                     imageVector = Icons.Default.Circle,
