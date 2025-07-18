@@ -116,7 +116,7 @@ internal fun AddCategoryRoute(
     AddCategoryScreen(
         uiState = uiState,
         uiAction = viewModel.accept,
-        isInEditMode = editCategoryId.isNotBlank(),
+        isInEditMode = editCategoryId != 0L,
         onNavUp = onNextPageLatest
     )
 

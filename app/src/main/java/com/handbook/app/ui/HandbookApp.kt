@@ -266,7 +266,7 @@ fun HandbookApp(
                                         title = @Composable {
                                             Text(
                                                 text = "Timeline",
-                                                style = MaterialTheme.typography.titleMedium
+                                                style = MaterialTheme.typography.titleLarge
                                                     .copy(fontWeight = FontWeight.W700)
                                             )
                                         },

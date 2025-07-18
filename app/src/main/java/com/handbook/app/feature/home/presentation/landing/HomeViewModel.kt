@@ -17,6 +17,7 @@ import com.handbook.app.common.util.paging.PagedRequest
 import com.handbook.app.core.domain.repository.UserDataRepository
 import com.handbook.app.core.util.ErrorMessage
 import com.handbook.app.core.util.Result
+import com.handbook.app.feature.home.domain.model.AccountEntry
 import com.handbook.app.feature.home.domain.model.AccountEntryFilters
 import com.handbook.app.feature.home.domain.model.AccountEntryWithDetails
 import com.handbook.app.feature.home.domain.model.Post
@@ -45,6 +46,8 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format
+import kotlinx.datetime.format.char
 import kotlinx.datetime.toLocalDateTime
 import timber.log.Timber
 import javax.inject.Inject
@@ -78,7 +81,7 @@ class HomeViewModel @Inject constructor(
                         .insertSeparators { before, after ->
                             // Simplified: Only add separator if 'after' is an Item and it's the start of the list OR if 'before' is an Item.
                             // This is a placeholder and likely needs more sophisticated logic for actual date separation.
-                            getSeparatorForItems(before, after)
+                            getSeparatorForItems3(before, after)
                         }
                 }
         }
@@ -124,6 +127,14 @@ class HomeViewModel @Inject constructor(
 
             HomeUiAction.LoadMore -> {
                 // retryInternal(true)
+            }
+
+            is HomeUiAction.OnEditEntry -> {
+                sendEvent(HomeUiEvent.NavigateToEditEntry(uiAction.entry))
+            }
+
+            is HomeUiAction.OnDeleteEntry -> {
+                sendEvent(HomeUiEvent.NavigateToDeleteEntry(uiAction.entry))
             }
         }
     }
@@ -172,6 +183,80 @@ class HomeViewModel @Inject constructor(
         return null
     }
 
+    private fun getSeparatorForItems2(before: AccountEntryUiModel?, after: AccountEntryUiModel?): AccountEntryUiModel.Separator? {
+        val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+        if (before == null) {
+            // we're at the very first item
+            return (after as? AccountEntryUiModel.Item)?.let { model ->
+                val afterDateTime = model.accountEntryWithDetails.entry.createdAt.toLocalDateTime()
+                if (afterDateTime.date.compareTo(today.date) == 0) {
+                    AccountEntryUiModel.Separator("Today", today.date)
+                } else {
+                    AccountEntryUiModel.Separator("Past", today.date)
+                }
+            }
+        }
+
+        if (after == null) {
+            // we're at the end of the list
+            return null
+        }
+
+        // Checking between two items
+        if (before is AccountEntryUiModel.Item && after is AccountEntryUiModel.Item) {
+            val beforeDate = before.accountEntryWithDetails.entry.createdAt.toLocalDateTime().date
+            val afterDate = after.accountEntryWithDetails.entry.createdAt.toLocalDateTime().date
+            val todayDate = today.date
+
+            return when {
+                // If the item before is today and the item after is not today, show "Past"
+                beforeDate.compareTo(todayDate) == 0 && afterDate.compareTo(todayDate) != 0 -> {
+                    AccountEntryUiModel.Separator("Past", afterDate)
+                }
+                // If the item before is not today and the item after is not today, and their dates are different, show "Past"
+                beforeDate.compareTo(todayDate) != 0 && afterDate.compareTo(todayDate) != 0 && beforeDate.compareTo(afterDate) != 0 -> {
+                    AccountEntryUiModel.Separator("Past", afterDate)
+                }
+                beforeDate.compareTo(afterDate) != 0 -> AccountEntryUiModel.Separator(afterDate.toString(), afterDate) // Or format as needed
+                else -> null
+            }
+        }
+
+        return null
+    }
+
+    private fun getSeparatorForItems3(before: AccountEntryUiModel?, after: AccountEntryUiModel?): AccountEntryUiModel.Separator? {
+        val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+
+        if (after == null) { // We're at the end of the list
+            return null;
+        }
+
+        // Only consider inserting a separator if 'after' is an actual data item
+        val afterItem = after as? AccountEntryUiModel.Item ?: return null
+        val afterDate = afterItem.accountEntryWithDetails.entry.createdAt.toLocalDateTime().date
+
+        if (before == null) { // We're at the beginning of the list
+            return AccountEntryUiModel.Separator("Today", today.date)
+        }
+
+        // Only consider inserting a separator if 'before' was also an actual data item
+        val beforeItem = before as? AccountEntryUiModel.Item ?: return null
+        val beforeDate = beforeItem.accountEntryWithDetails.entry.createdAt.toLocalDateTime().date
+
+        // If the date of 'after' is different from 'before', we need to insert a separator
+        return if (beforeDate.compareTo(afterDate) != 0) {
+            val format = LocalDate.Format { day(); char('-'); monthNumber(); char('-'); year() }
+            // The date of the 'after' item is different from the 'before' item.
+            // The text for this separator is based on the date of the 'after' item.
+            AccountEntryUiModel.Separator(afterDate.format(format), afterDate)
+        } else {
+            // Dates are the same, no separator needed between these two items
+            null
+        }
+
+    }
+
     private fun parseAccountEntriesError(t: Throwable): AccountEntryUiState.Error {
         return AccountEntryUiState.Error(ErrorMessage.from(t))
     }
@@ -194,14 +279,19 @@ sealed interface AccountEntryUiState {
 sealed interface AccountEntryUiModel {
     data class Item(val accountEntryWithDetails: AccountEntryWithDetails) : AccountEntryUiModel
     data class Separator(val text: String, val date: LocalDate) : AccountEntryUiModel
+    data class Footer(val uiText: UiText) : AccountEntryUiModel
 }
 
 sealed interface HomeUiAction {
     data object Refresh : HomeUiAction
     data object LoadMore : HomeUiAction
+    data class OnEditEntry(val entry: AccountEntry) : HomeUiAction
+    data class OnDeleteEntry(val entry: AccountEntry) : HomeUiAction
 }
 
 sealed interface HomeUiEvent {
     data class ShowToast(val message: UiText) : HomeUiEvent
     data class ShowSnackbar(val message: UiText) : HomeUiEvent
+    data class NavigateToEditEntry(val entry: AccountEntry) : HomeUiEvent
+    data class NavigateToDeleteEntry(val entry: AccountEntry) : HomeUiEvent
 }

@@ -41,7 +41,7 @@ class AddPartyViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = viewModelState.value.toAddPartyUiState()
         )
-    val partyId = savedStateHandle.getStateFlow("partyId", "")
+    val partyId = savedStateHandle.getStateFlow("partyId", 0L)
 
     private val _uiEvent = MutableSharedFlow<AddPartyUiEvent>()
     val uiEvent = _uiEvent.asSharedFlow()
@@ -54,7 +54,7 @@ class AddPartyViewModel @Inject constructor(
     init {
         accept = { uiAction -> onUiAction(uiAction) }
 
-        if (partyId.value.isNotBlank()) {
+        if (partyId.value != 0L) {
             viewModelState.update { state -> state.copy(partyId = partyId.value.toLong()) }
             viewModelScope.launch {
                 accountsRepository.getParty(partyId.value.toLong()).fold(

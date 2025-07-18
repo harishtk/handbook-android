@@ -41,7 +41,7 @@ class AddCategoryViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = viewModelState.value.toAddCategoryUiState()
         )
-    val categoryId = savedStateHandle.getStateFlow("categoryId", "")
+    val categoryId = savedStateHandle.getStateFlow<Long>("categoryId", 0L)
 
     private val _uiEvent = MutableSharedFlow<AddCategoryUiEvent>()
     val uiEvent = _uiEvent.asSharedFlow()
@@ -54,7 +54,7 @@ class AddCategoryViewModel @Inject constructor(
     init {
         accept = { uiAction -> onUiAction(uiAction) }
 
-        if (categoryId.value.isNotBlank()) {
+        if (categoryId.value != 0L) {
             viewModelState.update { state -> state.copy(categoryId = categoryId.value.toLong()) }
             viewModelScope.launch {
                 accountsRepository.getCategory(categoryId.value.toLong()).fold(

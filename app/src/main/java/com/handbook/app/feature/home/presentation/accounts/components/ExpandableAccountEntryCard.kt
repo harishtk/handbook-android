@@ -131,7 +131,7 @@ fun ExpandableAccountEntryCard(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainer
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
             Column(
                 modifier = Modifier
@@ -212,6 +212,8 @@ fun ExpandableAccountEntryCard(
                 ) {
                     ExpandedDetailsView(
                         entryDetails = entryDetails,
+                        onEdit = onEdit,
+                        onDelete = onDelete,
                         modifier = Modifier.padding(top = 12.dp)
                     )
                 }
@@ -413,7 +415,9 @@ private fun ExpandIcon(expanded: Boolean) {
 @Composable
 private fun ExpandedDetailsView(
     entryDetails: AccountEntryWithDetails,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onEdit: () -> Unit = {},
+    onDelete: () -> Unit = {}
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -483,7 +487,7 @@ private fun ExpandedDetailsView(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             FilledTonalButton(
-                onClick = { /* Handle edit */ },
+                onClick = onEdit,
                 colors = ButtonDefaults.filledTonalButtonColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer
@@ -492,7 +496,7 @@ private fun ExpandedDetailsView(
                 Text("Edit")
             }
             FilledTonalButton(
-                onClick = { /* Handle delete */ },
+                onClick = onDelete,
                 colors = ButtonDefaults.filledTonalButtonColors(
                     containerColor = MaterialTheme.colorScheme.errorContainer,
                     contentColor = MaterialTheme.colorScheme.onErrorContainer

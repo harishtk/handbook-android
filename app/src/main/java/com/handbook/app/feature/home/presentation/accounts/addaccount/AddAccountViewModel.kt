@@ -56,10 +56,10 @@ class AddAccountViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = viewModelState.value.toAddAccountUiState()
         )
-    val accountEntryId = savedStateHandle.getStateFlow("accountEntryId", "")
+    val accountEntryId = savedStateHandle.getStateFlow<Long>("accountEntryId", 0L)
     val transactionType = savedStateHandle.getStateFlow("transactionType", "")
-    val categoryId = savedStateHandle.getStateFlow("categoryId", 0L)
-    val partyId = savedStateHandle.getStateFlow("partyId", 0L)
+    val categoryId = savedStateHandle.getStateFlow<Long>("categoryId", 0L)
+    val partyId = savedStateHandle.getStateFlow<Long>("partyId", 0L)
 
     private val _uiEvent = MutableSharedFlow<AddAccountUiEvent>()
     val uiEvent = _uiEvent.asSharedFlow()
@@ -72,7 +72,8 @@ class AddAccountViewModel @Inject constructor(
     init {
         accept = { uiAction -> onUiAction(uiAction) }
 
-        if (accountEntryId.value.isNotBlank()) {
+        if (accountEntryId.value != 0L) {
+            Timber.d("Parsing: accountEntryId=$accountEntryId.value")
             viewModelState.update { state -> state.copy(accountEntryId = accountEntryId.value.toLong()) }
             viewModelScope.launch {
                 accountsRepository.getAccountEntry(accountEntryId.value.toLong()).fold(
@@ -96,6 +97,8 @@ class AddAccountViewModel @Inject constructor(
                     }
                 )
             }
+        } else {
+            Timber.d("Parsing: No accountEntryId")
         }
 
         transactionType.onEach {

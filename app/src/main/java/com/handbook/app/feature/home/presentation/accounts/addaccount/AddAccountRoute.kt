@@ -159,7 +159,7 @@ internal fun AddAccountRoute(
     AddAccountScreen(
         uiState = uiState,
         uiAction = viewModel.accept,
-        isInEditMode = editEntryId.isNotBlank(),
+        isInEditMode = editEntryId != 0L,
         onNavUp = onNextPageLatest
     )
 
@@ -192,11 +192,11 @@ internal fun AddAccountRoute(
             }
 
             is AddAccountUiEvent.NavigateToCategorySelection -> {
-                context.showToast("Navigating to category: ${event.categoryId}")
+                // context.showToast("Navigating to category: ${event.categoryId}")
                 onSelectCategoryRequest(event.categoryId)
             }
             is AddAccountUiEvent.NavigateToPartySelection -> {
-                context.showToast("Navigating to party: ${event.partyId}")
+                // context.showToast("Navigating to party: ${event.partyId}")
                 onSelectPartyRequest(event.partyId)
             }
         }
@@ -985,7 +985,7 @@ private fun EntryTypeSelector(
     onToggle: (AddAccountUiAction.OnEntryTypeToggle) -> Unit,
 ) {
     val options = EntryType.entries.map { it.name }
-    var selectedOption by remember {
+    var selectedOption by remember(uiState.entryType) {
         mutableIntStateOf(
             options.indexOf(uiState.entryType.name)
         )

@@ -124,7 +124,7 @@ internal fun AddPartyRoute(
     AddPartyScreen(
         uiState = uiState,
         uiAction = viewModel.accept,
-        isInEditMode = editPartyId.isNotBlank(),
+        isInEditMode = editPartyId != 0L,
         onNavUp = onNextPageLatest
     )
 

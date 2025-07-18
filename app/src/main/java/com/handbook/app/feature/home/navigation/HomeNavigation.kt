@@ -48,18 +48,18 @@ const val profileNavigationRoute = "profile_route/{$USER_ID_ARG}"
 const val searchNavigationRoute = "search_route"
 const val notificationsNavigationRoute = "notification_route"
 
-const val PARTY_ID_ARG = "partyId"
-const val PICKER_MODE_ARG = "pickerMode"
-const val allPartiesNavigationRoute = "all_parties_route?partyId={$PARTY_ID_ARG}?pickerMode={$PICKER_MODE_ARG}"
+const val PARTY_ID = "partyId"
+const val PICKER_MODE = "pickerMode"
+const val allPartiesNavigationRoute = "all_parties_route?$PARTY_ID={$PARTY_ID}?$PICKER_MODE={$PICKER_MODE}"
 
-const val addPartyNavigationRoute = "add_party_route/{$PARTY_ID_ARG}"
-const val CATEGORY_ID_ARG = "categoryId"
-const val allCategoriesNavigationRoute = "all_categories_route?categoryId={$CATEGORY_ID_ARG}?pickerMode={$PICKER_MODE_ARG}"
-const val addCategoryNavigationRoute = "add_category_route/{$CATEGORY_ID_ARG}"
+const val addPartyNavigationRoute = "add_party_route?$PARTY_ID={$PARTY_ID}"
+const val CATEGORY_ID = "categoryId"
+const val allCategoriesNavigationRoute = "all_categories_route?$CATEGORY_ID={$CATEGORY_ID}&$PICKER_MODE={$PICKER_MODE}"
+const val addCategoryNavigationRoute = "add_category_route?$CATEGORY_ID={$CATEGORY_ID}"
 
-const val ACCOUNT_ENTRY_ID_ARG = "accountEntryId"
+const val ACCOUNT_ENTRY_ID = "accountEntryId"
 const val ACCOUNT_ENTRY_TRANSACTION_TYPE = "transactionType"
-const val addAccountEntryNavigationRoute = "add_account_entry_route/${ACCOUNT_ENTRY_ID_ARG}?transactionType={$ACCOUNT_ENTRY_TRANSACTION_TYPE}"
+const val addAccountEntryNavigationRoute = "add_account_entry_route?$ACCOUNT_ENTRY_ID={$ACCOUNT_ENTRY_ID}&$ACCOUNT_ENTRY_TRANSACTION_TYPE={$ACCOUNT_ENTRY_TRANSACTION_TYPE}"
 
 const val webPageNavigationRoute = "web_page_route?url={url}"
 const val settingsNavigationRoute = "settings_route"
@@ -101,15 +101,15 @@ fun NavController.navigateToAllParties(
     navOptions: NavOptions? = null
 ) {
     this.navigate(allPartiesNavigationRoute
-        .replace("{$PARTY_ID_ARG}", partyId.toString())
-        .replace("{$PICKER_MODE_ARG}", isInPickerMode.toString()), navOptions)
+        .replace("{$PARTY_ID}", partyId.toString())
+        .replace("{$PICKER_MODE}", isInPickerMode.toString()), navOptions)
 }
 
 fun NavController.navigateToAddParty(
     partyId: String? = null,
     navOptions: NavOptions? = null
 ) {
-    this.navigate(addPartyNavigationRoute.replace("{$PARTY_ID_ARG}", partyId ?: ""), navOptions)
+    this.navigate(addPartyNavigationRoute.replace("{$PARTY_ID}", partyId ?: ""), navOptions)
 }
 
 fun NavController.navigateToAllCategories(
@@ -118,15 +118,15 @@ fun NavController.navigateToAllCategories(
     navOptions: NavOptions? = null
 ) {
     this.navigate(allCategoriesNavigationRoute
-        .replace("{$CATEGORY_ID_ARG}", categoryId.toString())
-        .replace("{$PICKER_MODE_ARG}", isInPickerMode.toString()), navOptions)
+        .replace("{$CATEGORY_ID}", categoryId.toString())
+        .replace("{$PICKER_MODE}", isInPickerMode.toString()), navOptions)
 }
 
 fun NavController.navigateToAddCategory(
     categoryId: String? = null,
     navOptions: NavOptions? = null
 ) {
-    this.navigate(addCategoryNavigationRoute.replace("{$CATEGORY_ID_ARG}", categoryId ?: ""), navOptions)
+    this.navigate(addCategoryNavigationRoute.replace("{$CATEGORY_ID}", categoryId ?: ""), navOptions)
 }
 
 fun NavController.navigateToAddAccountEntry(
@@ -136,7 +136,7 @@ fun NavController.navigateToAddAccountEntry(
 ) {
     this.navigate(
         addAccountEntryNavigationRoute
-            .replace("{$ACCOUNT_ENTRY_ID_ARG}", accountEntryId ?: "")
+            .replace("{$ACCOUNT_ENTRY_ID}", accountEntryId ?: "")
             .replace("{$ACCOUNT_ENTRY_TRANSACTION_TYPE}", transactionType),
         navOptions)
 }
@@ -179,18 +179,11 @@ fun NavGraphBuilder.homeScreen(
         val sharedViewModel = it.sharedViewModel<SharedViewModel>(navController)
         HomeRoute(
             sharedViewModel = sharedViewModel,
-            onAddEntryRequest = { transactionType ->
+            onAddEntryRequest = { entryId, transactionType ->
                 navController.navigateToAddAccountEntry(
+                    accountEntryId = entryId.toString(),
                     transactionType = transactionType.name
                 )
-            },
-            onWritePostRequest = {
-                navController.navigateToAddAccountEntry()
-            },
-            onNavigateToProfile = { userId ->
-                navController.navigateToProfile(userId)
-            },
-            onNavigateToPost = { postId ->
             },
             onNavigateToNotifications = {
                 navController.navigateToNotifications()
@@ -255,18 +248,11 @@ fun NavGraphBuilder.homeGraph(
             val sharedViewModel = it.sharedViewModel<SharedViewModel>(navController)
             HomeRoute(
                 sharedViewModel = sharedViewModel,
-                onAddEntryRequest = { transactionType ->
+                onAddEntryRequest = { entryId, transactionType ->
                     navController.navigateToAddAccountEntry(
+                        accountEntryId = entryId.toString(),
                         transactionType = transactionType.name
                     )
-                },
-                onWritePostRequest = {
-                    navController.navigateToAddAccountEntry()
-                },
-                onNavigateToProfile = { userId ->
-                    navController.navigateToProfile(userId)
-                },
-                onNavigateToPost = { postId ->
                 },
                 onNavigateToNotifications = {
                     // navController.navigateToNotifications()
@@ -278,11 +264,11 @@ fun NavGraphBuilder.homeGraph(
         composable(
             route = allPartiesNavigationRoute,
             arguments = listOf(
-                navArgument(PARTY_ID_ARG) {
+                navArgument(PARTY_ID) {
                     type = NavType.LongType
                     defaultValue = 0L
                 },
-                navArgument(PICKER_MODE_ARG) {
+                navArgument(PICKER_MODE) {
                     type = NavType.BoolType
                     defaultValue = false
                 }
@@ -301,10 +287,13 @@ fun NavGraphBuilder.homeGraph(
         composable(
             route = addPartyNavigationRoute,
             arguments = listOf(
-                navArgument(PARTY_ID_ARG) { type = NavType.StringType }
+                navArgument(PARTY_ID) {
+                    type = NavType.LongType
+                    defaultValue = 0L
+                }
             ),
             deepLinks = listOf(navDeepLink {
-                uriPattern = "seller://party/{$PARTY_ID_ARG}"
+                uriPattern = "seller://party/${PARTY_ID}"
             })
         ) {
             val sharedViewModel = it.sharedViewModel<SharedViewModel>(navController)
@@ -316,11 +305,11 @@ fun NavGraphBuilder.homeGraph(
         composable(
             route = allCategoriesNavigationRoute,
             arguments = listOf(
-                navArgument(CATEGORY_ID_ARG) {
+                navArgument(CATEGORY_ID) {
                     type = NavType.LongType
                     defaultValue = 0L
                 },
-                navArgument(PICKER_MODE_ARG) {
+                navArgument(PICKER_MODE) {
                     type = NavType.BoolType
                     defaultValue = false
                 }
@@ -341,7 +330,10 @@ fun NavGraphBuilder.homeGraph(
         composable(
             route = addCategoryNavigationRoute,
             arguments = listOf(
-                navArgument(CATEGORY_ID_ARG) { type = NavType.StringType }
+                navArgument(CATEGORY_ID) {
+                    type = NavType.LongType
+                    defaultValue = 0L
+                }
             ),
         ) {
             val sharedViewModel = it.sharedViewModel<SharedViewModel>(navController)
@@ -353,9 +345,9 @@ fun NavGraphBuilder.homeGraph(
         composable(
             route = addAccountEntryNavigationRoute,
             arguments = listOf(
-                navArgument(ACCOUNT_ENTRY_ID_ARG) {
-                    type = NavType.StringType
-                    defaultValue = ""
+                navArgument(ACCOUNT_ENTRY_ID) {
+                    type = NavType.LongType
+                    defaultValue = 0L
                                                   },
                 navArgument(ACCOUNT_ENTRY_TRANSACTION_TYPE) {
                     type = NavType.StringType
