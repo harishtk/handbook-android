@@ -31,6 +31,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedButton
@@ -78,6 +79,7 @@ import com.handbook.app.core.designsystem.component.HandbookBackground
 import com.handbook.app.core.designsystem.component.HandbookGradientBackground
 import com.handbook.app.core.designsystem.component.ThemePreviews
 import com.handbook.app.feature.home.domain.model.Party
+import com.handbook.app.feature.home.presentation.category.AllCategoriesUiAction
 import com.handbook.app.ui.theme.Gray60
 import com.handbook.app.ui.theme.HandbookTheme
 import kotlinx.coroutines.flow.flowOf
@@ -209,6 +211,18 @@ private fun AllPartiesScreen(
                 },
                 leadingIcon = {
                     Icon(Icons.Default.Search, contentDescription = "Search")
+                },
+                trailingIcon = {
+                    if (searchQuery.isNotBlank()) {
+                        IconButton(
+                            onClick = {
+                                searchQuery = ""
+                                uiAction(AllPartiesUiAction.OnTypingQuery(""))
+                            }
+                        ) {
+                            Icon(Icons.Default.Clear, contentDescription = "Clear")
+                        }
+                    }
                 },
                 shape = RoundedCornerShape(48.dp),
                 colors = OutlinedTextFieldDefaults.colors(

@@ -2,7 +2,12 @@
 
 package com.handbook.app.feature.home.presentation.accounts
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -11,6 +16,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.FilterAltOff
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -41,6 +51,7 @@ fun FilterBar(
     // allCategories: List<FilterChipOption<Long>> = emptyList(),
     // allParties: List<FilterChipOption<Long>> = emptyList()
 ) {
+    var filtersExpanded by remember { mutableStateOf(false) }
     val dateFilterOptions = remember { generatePast7DaysDateOptions() }
 
     // Static lists for Enums - In a real app, dynamic lists (categories, parties)
@@ -67,65 +78,139 @@ fun FilterBar(
         }
     }
 
-    Column(modifier = modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-        // --- Date Filters ---
-        DateFilterChips(
-            dateOptions = dateFilterOptions,
-            currentFilters = currentFilters,
-            onDateRangeSelected = { startDate, endDate ->
-                onFiltersChanged(
-                    currentFilters.copy(
-                        startDate = startDate,
-                        endDate = endDate
-                    )
-                )
-            }
-        )
-
-        Spacer(modifier = Modifier.height(12.dp)) // Spacing between filter groups
-
-        // --- Entry Type Filters ---
-        GenericFilterChipRow(
-            title = "Entry Type",
-            options = entryTypeOptions,
-            selectedSingleValue = currentFilters.entryType,
-            onOptionSelected = { selectedEntryType ->
-                onFiltersChanged(currentFilters.copy(entryType = selectedEntryType))
-            }
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // --- Transaction Type Filters ---
-        GenericFilterChipRow(
-            title = "Transaction Type",
-            options = transactionTypeOptions,
-            selectedSingleValue = currentFilters.transactionType,
-            onOptionSelected = { selectedTransactionType ->
-                onFiltersChanged(currentFilters.copy(transactionType = selectedTransactionType))
-            }
-        )
-
-        // TODO: Add more GenericFilterChipRow sections for other filter types
-        // e.g., for Categories, Parties.
-        // If these options are dynamic (e.g., from a database):
-        // 1. Fetch them in your ViewModel.
-        // 2. Map them to List<FilterChipOption<YourIdType>>.
-        // 3. Pass this list to the FilterBar composable as a parameter.
-        // 4. Use it in another GenericFilterChipRow.
-        /*
-        if (allCategories.isNotEmpty()) { // Assuming allCategories is List<FilterChipOption<Long>>
-            Spacer(modifier = Modifier.height(12.dp))
-            GenericFilterChipRow(
-                title = "Category",
-                options = allCategories,
-                selectedSingleValue = currentFilters.categoryId,
-                onOptionSelected = { selectedCategoryId ->
-                    onFiltersChanged(currentFilters.copy(categoryId = selectedCategoryId))
+    val activeFilterSummary = remember(currentFilters, dateFilterOptions, entryTypeOptions, transactionTypeOptions) {
+        buildList {
+            currentFilters.startDate?.let { start ->
+                currentFilters.endDate?.let { end ->
+                    val matchingDateOption = dateFilterOptions.find { it.startDateMillis == start && it.endDateMillis == end }
+                    add(matchingDateOption?.displayLabel ?: "Date Range")
                 }
+            }
+            currentFilters.entryType?.let { entryType ->
+                entryTypeOptions.find { it.value == entryType }?.label?.let { add(it) }
+            }
+            currentFilters.transactionType?.let { transactionType ->
+                transactionTypeOptions.find { it.value == transactionType }?.label?.let { add(it) }
+            }
+            // currentFilters.categoryId?.let { categoryId ->
+            //     allCategories.find { it.value == categoryId }?.label?.let { add(it) }
+            // }
+            // Add other filters here
+        }.joinToString(", ")
+    }
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { filtersExpanded = !filtersExpanded }
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Icon(imageVector = Icons.Default.FilterList, contentDescription = "Filter Icon")
+            if (filtersExpanded) {
+                Text(text = "Hide Filters", style = MaterialTheme.typography.titleSmall)
+            } else {
+                if (activeFilterSummary.isNotEmpty()) {
+                    Text(text = "Filters: $activeFilterSummary", style = MaterialTheme.typography.titleSmall, maxLines = 1)
+                } else {
+                    Text(text = "Show Filters", style = MaterialTheme.typography.titleSmall)
+                }
+            }
+
+            val rotationAngle by animateFloatAsState(targetValue = if (filtersExpanded) 180f else 0f, label = "expand_icon_rotation")
+            Icon(
+                imageVector = Icons.Default.ExpandMore,
+                contentDescription = if (filtersExpanded) "Collapse filters" else "Expand filters",
+                modifier = Modifier.rotate(rotationAngle)
             )
         }
-        */
+
+
+        AnimatedVisibility(
+            visible = filtersExpanded,
+            enter = expandVertically(),
+            exit = shrinkVertically()
+        ) {
+            Column(modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp, start = 8.dp, end = 8.dp)) {
+                // --- Clear All Filters Button ---
+                val anyFilterActive = currentFilters != AccountEntryFilters.None
+                if (anyFilterActive) {
+                    OutlinedButton(
+                        onClick = {
+                            onFiltersChanged(AccountEntryFilters.None)
+                            filtersExpanded = false
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FilterAltOff,
+                            contentDescription = "Clear all filters",
+                            modifier = Modifier.size(ButtonDefaults.IconSize)
+                        )
+                        Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                        Text("Clear All Filters")
+                    }
+                }
+                // --- Date Filters ---
+                DateFilterChips(
+                    dateOptions = dateFilterOptions,
+                    currentFilters = currentFilters,
+                    onDateRangeSelected = { startDate, endDate ->
+                        onFiltersChanged(
+                            currentFilters.copy(
+                                startDate = startDate,
+                                endDate = endDate
+                            )
+                        )
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(12.dp)) // Spacing between filter groups
+
+                // --- Entry Type Filters ---
+                GenericFilterChipRow(
+                    title = "Entry Type",
+                    options = entryTypeOptions,
+                    selectedSingleValue = currentFilters.entryType,
+                    onOptionSelected = { selectedEntryType ->
+                        onFiltersChanged(currentFilters.copy(entryType = selectedEntryType))
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // --- Transaction Type Filters ---
+                GenericFilterChipRow(
+                    title = "Transaction Type",
+                    options = transactionTypeOptions,
+                    selectedSingleValue = currentFilters.transactionType,
+                    onOptionSelected = { selectedTransactionType ->
+                        onFiltersChanged(currentFilters.copy(transactionType = selectedTransactionType))
+                    }
+                )
+
+                // TODO: Add more GenericFilterChipRow sections for other filter types
+                /*
+                if (allCategories.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    GenericFilterChipRow(
+                        title = "Category",
+                        options = allCategories,
+                        selectedSingleValue = currentFilters.categoryId,
+                        onOptionSelected = { selectedCategoryId ->
+                            onFiltersChanged(currentFilters.copy(categoryId = selectedCategoryId))
+                        }
+                    )
+                }*/
+            }
+        }
     }
 }
 //endregion
@@ -312,7 +397,7 @@ fun FilterChipTab(
             color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest,
             border = if (!selected) BorderStroke(1.dp, MaterialTheme.colorScheme.outline) else null,
             modifier = Modifier
-                .padding(vertical = 6.dp)
+                .padding(vertical = 6.dp, horizontal = 4.dp)
                 .defaultMinSize(minHeight = 32.dp)
         ) {
             Box(
@@ -462,7 +547,9 @@ fun FilterBarPreview() {
     // }
 
     HandbookTheme {
-        Column(Modifier.fillMaxSize().padding(8.dp)) {
+        Column(Modifier
+            .fillMaxSize()
+            .padding(8.dp)) {
             FilterBar(
                 currentFilters = currentFilters,
                 onFiltersChanged = { updatedFilters ->

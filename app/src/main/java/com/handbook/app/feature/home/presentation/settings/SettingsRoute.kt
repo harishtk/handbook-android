@@ -30,9 +30,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -70,9 +71,9 @@ import com.handbook.app.R
 import com.handbook.app.common.util.UiText
 import com.handbook.app.core.designsystem.HandbookIcons
 import com.handbook.app.core.designsystem.HandbookTopAppBarState
-import com.handbook.app.core.designsystem.component.BestDealsTopAppBar
-import com.handbook.app.core.designsystem.component.HandbookTopAppBar
+import com.handbook.app.core.designsystem.component.HandbookSimpleTopAppBar
 import com.handbook.app.core.designsystem.component.LoadingDialog
+import com.handbook.app.core.designsystem.component.ThemePreviews
 import com.handbook.app.feature.home.presentation.util.SettingsItem
 import com.handbook.app.feature.home.presentation.util.SettingsListType
 import com.handbook.app.showToast
@@ -148,7 +149,7 @@ private fun SettingsScreen(
         snackbarHost = { SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding()) },
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            BestDealsTopAppBar(state = topAppBarState)
+            HandbookSimpleTopAppBar(state = topAppBarState)
         },
         bottomBar = {
             val brush = Brush.linearGradient(colors = listOf(HandbookGreen, HandbookDarkGreen))
@@ -180,9 +181,10 @@ private fun SettingsScreen(
                     horizontalArrangement = Arrangement.Center,
                 ) {
                     Text(
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            brush = brush
+                        ),
                         text = stringResource(R.string.version_info, appName, version),
-                        color = MaterialColor.Grey400
                     )
                 }
             }
@@ -279,7 +281,10 @@ private fun ColumnScope.SettingsListView(
         verticalArrangement = Arrangement.spacedBy(insetSmall)
     ) {
         items(settingsItemsHolder.items, key = { it.id }) { item ->
-            SettingsItemRow(settingsItem = item) { settingsItem ->
+            SettingsItemRow(
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                settingsItem = item
+            ) { settingsItem ->
                 when (SettingsIds.fromId(settingsItem.id)) {
                     SettingsIds.Faq -> {
                         onOpenWebPage(Constant.FAQ_URL)
@@ -306,12 +311,6 @@ private fun ColumnScope.SettingsListView(
                     }
                 }
             }
-            Divider(
-                modifier = Modifier
-                    .padding(horizontal = 16.dp),
-                thickness = 1.dp,
-                color = MaterialColor.Grey100
-            )
         }
     }
 }
@@ -322,16 +321,14 @@ private fun SettingsItemRow(
     settingsItem: SettingsItem,
     onClick: (settingsItem: SettingsItem) -> Unit = {},
 ) {
-    val clickableModifier = remember(settingsItem) {
-        Modifier.clickable { onClick(settingsItem) }
-    }
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(clickableModifier)
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        onClick = { onClick(settingsItem) },
     ) {
         Row(
-            modifier = Modifier.padding(8.dp),
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(8.dp),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -364,7 +361,7 @@ private fun SettingsItemRow(
                         Text(
                             text = uiText.asString(LocalContext.current),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialColor.Grey400
+                            color = MaterialTheme.colorScheme.secondary
                         )
                     }
                 }
@@ -463,24 +460,6 @@ private fun gotoMarket(context: Context) {
     }
 }
 
-// @Preview(name = "phone", device = "spec:shape=Normal,width=360,height=640,unit=dp,dpi=480")
-@Preview(group = "screen")
-@Composable
-fun SettingsPreview() {
-    Box {
-        HandbookTheme {
-            SettingsScreen(
-                uiState = SettingsUiState.SettingsList(
-                    settingsItems = settingsListData
-                        .map { it.settingsItem },
-                    false,
-                    UiText.DynamicString("Something went wrong.")
-                )
-            )
-        }
-    }
-}
-
 @Composable
 @Preview(device = "id:pixel_3a", showBackground = true)
 private fun SettingsItemPreview() {
@@ -511,25 +490,27 @@ private fun SettingsItemPreview() {
         Column {
             sampleSettingsItems.onEach { item ->
                 SettingsItemRow(settingsItem = item)
-                Divider(
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp),
-                    thickness = 1.dp,
-                    color = MaterialColor.Grey100
-                )
             }
         }
     }
 }
 
+// @Preview(name = "phone", device = "spec:shape=Normal,width=360,height=640,unit=dp,dpi=480")
+@Preview(group = "screen")
+@ThemePreviews
 @Composable
-@Preview(group = "popup", showBackground = true)
-fun LogoutConfirmDialogPreview() {
-    Box(
-        Modifier.background(Color.White)
+private fun SettingsPreview() {
+    HandbookTheme(
+        androidTheme = true,
+        disableDynamicTheming = true
     ) {
-        HandbookTheme {
-            LogoutConfirmDialog(onDismiss = { /*TODO*/ }) {}
-        }
+        SettingsScreen(
+            uiState = SettingsUiState.SettingsList(
+                settingsItems = settingsListData
+                    .map { it.settingsItem },
+                false,
+                UiText.DynamicString("Something went wrong.")
+            )
+        )
     }
 }

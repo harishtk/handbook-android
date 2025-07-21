@@ -101,17 +101,17 @@ val settingsListData = listOf(
         requiresLogin = false
     ),
     // SettingsItem(settingsListType = SettingsListType.SIMPLE, id = 5, title = "Delete my account", R.drawable.ic_info_outline, "Want out? But We will miss you.", true),
-    SettingsItemWithAuthState(
-        settingsItem = SettingsItem(
-            settingsListType = SettingsListType.SIMPLE,
-            id = SettingsIds.Logout.id,
-            title = UiText.DynamicString("Logout"),
-            icon = null, /*R.drawable.ic_logout_outline,*/
-            description = null,
-            hasMore = false
-        ),
-        requiresLogin = true
-    ),
+//    SettingsItemWithAuthState(
+//        settingsItem = SettingsItem(
+//            settingsListType = SettingsListType.SIMPLE,
+//            id = SettingsIds.Logout.id,
+//            title = UiText.DynamicString("Logout"),
+//            icon = null, /*R.drawable.ic_logout_outline,*/
+//            description = null,
+//            hasMore = false
+//        ),
+//        requiresLogin = true
+//    ),
 )
 
 @HiltViewModel

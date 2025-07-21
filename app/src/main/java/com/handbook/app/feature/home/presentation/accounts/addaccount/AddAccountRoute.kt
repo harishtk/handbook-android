@@ -65,6 +65,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -342,16 +343,11 @@ private fun ColumnScope.AddAccountFormLayout(
     val dateFocusRequester = remember { FocusRequester() }
 
     val displayNameState = DisplayNameState.createTextFieldStateHandler(uiState.title)
-
-    val amountState by rememberSaveable {
-        mutableStateOf(AmountState(uiState.amount.toString()))
-    }
-    val descriptionState by rememberSaveable {
-        mutableStateOf(DescriptionState(uiState.description))
-    }
+    val amountState = AmountState.createTextFieldStateHandler(uiState.amount)
+    val descriptionState = DescriptionState.createTextFieldStateHandler(uiState.description)
 
     var showDatePickerDialog by remember { mutableStateOf(false) }
-    var selectedDateMillis by remember { mutableStateOf<Long>(uiState.transactionDate) }
+    var selectedDateMillis by remember { mutableLongStateOf(uiState.transactionDate) }
 
     // Initialize the DatePickerState.
     // You can set an initial selected date, year range, etc.
@@ -702,7 +698,7 @@ private fun DisplayNameInput(
 @Composable
 private fun AmountInput(
     modifier: Modifier = Modifier,
-    amountState: TextFieldState,
+    amountState: TextFieldStateHandler<AmountState>,
     onValueChange: (text: String) -> Unit = {},
     enableCharacterCounter: Boolean = false,
     provideFocusRequester: () -> FocusRequester = { FocusRequester() },
@@ -718,7 +714,7 @@ private fun AmountInput(
         OutlinedTextField(
             value = amountState.text,
             onValueChange = { text ->
-                amountState.text = text.take(30)
+                amountState.onTextChanged(text.take(30))
                 onValueChange(amountState.text)
             },
             prefix = {
@@ -761,7 +757,7 @@ private fun AmountInput(
                 .fillMaxWidth()
                 .focusRequester(provideFocusRequester())
                 .onFocusChanged { focusState ->
-                    amountState.onFocusChange(focusState.isFocused)
+                    amountState.onFocusChanged(focusState.isFocused)
                     if (!focusState.isFocused) {
                         amountState.enableShowErrors()
                     }
@@ -769,7 +765,7 @@ private fun AmountInput(
                 .padding(vertical = insetVerySmall),
         )
 
-        amountState.getError()?.let { error ->
+        amountState.errorMessage?.let { error ->
             TextFieldError(textError = error)
         }
     }
@@ -778,7 +774,7 @@ private fun AmountInput(
 @Composable
 private fun DescriptionInput(
     modifier: Modifier = Modifier,
-    bioState: TextFieldState,
+    bioState: TextFieldStateHandler<DescriptionState>,
     onValueChange: (text: String) -> Unit = {},
     enableCharacterCounter: Boolean = false,
     provideFocusRequester: () -> FocusRequester = { FocusRequester() },
@@ -809,7 +805,7 @@ private fun DescriptionInput(
         OutlinedTextField(
             value = bioState.text,
             onValueChange = { text ->
-                bioState.text = text.take(DescriptionLength)
+                bioState.onTextChanged(text.take(DescriptionLength))
                 onValueChange(bioState.text)
             },
             placeholder = {
@@ -853,14 +849,14 @@ private fun DescriptionInput(
                 .heightIn(min = 120.dp)
                 .focusRequester(provideFocusRequester())
                 .onFocusChanged { focusState ->
-                    bioState.onFocusChange(focusState.isFocused)
+                    bioState.onFocusChanged(focusState.isFocused)
                     if (!focusState.isFocused) {
                         bioState.enableShowErrors()
                     }
                 }
         )
 
-        bioState.getError()?.let { error ->
+        bioState.errorMessage?.let { error ->
             TextFieldError(textError = error)
         }
     }

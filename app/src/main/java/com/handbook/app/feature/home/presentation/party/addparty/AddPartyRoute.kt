@@ -90,7 +90,6 @@ import com.handbook.app.feature.home.presentation.party.components.form.AddressS
 import com.handbook.app.feature.home.presentation.party.components.form.AddressStateSaver
 import com.handbook.app.feature.home.presentation.party.components.form.DescriptionLength
 import com.handbook.app.feature.home.presentation.party.components.form.DescriptionState
-import com.handbook.app.feature.home.presentation.party.components.form.DescriptionStateSaver
 import com.handbook.app.feature.home.presentation.party.components.form.DisplayNameLength
 import com.handbook.app.feature.home.presentation.party.components.form.DisplayNameState
 import com.handbook.app.feature.home.presentation.party.components.form.PhoneNumberLength
@@ -273,9 +272,7 @@ private fun ColumnScope.AddPartyFormLayout(
     val phoneNumberState by rememberSaveable(stateSaver = PhoneNumberStateSaver) {
         mutableStateOf(PhoneNumberState(uiState.contact))
     }
-    val descriptionState by rememberSaveable(stateSaver = DescriptionStateSaver) {
-        mutableStateOf(DescriptionState(uiState.description))
-    }
+    val descriptionState = DescriptionState.createTextFieldStateHandler(uiState.description)
     val addressState by rememberSaveable(stateSaver = AddressStateSaver) {
         mutableStateOf(AddressState(uiState.address))
     }
@@ -606,7 +603,7 @@ private fun PhoneNumberInput(
 @Composable
 private fun DescriptionInput(
     modifier: Modifier = Modifier,
-    bioState: TextFieldState,
+    bioState: TextFieldStateHandler<DescriptionState>,
     onValueChange: (text: String) -> Unit = {},
     enableCharacterCounter: Boolean = false,
     provideFocusRequester: () -> FocusRequester = { FocusRequester() },
@@ -637,7 +634,7 @@ private fun DescriptionInput(
         OutlinedTextField(
             value = bioState.text,
             onValueChange = { text ->
-                bioState.text = text.take(DescriptionLength)
+                bioState.onTextChanged(text.take(DescriptionLength))
                 onValueChange(bioState.text)
             },
             placeholder = {
@@ -681,14 +678,14 @@ private fun DescriptionInput(
                 .heightIn(min = 120.dp)
                 .focusRequester(provideFocusRequester())
                 .onFocusChanged { focusState ->
-                    bioState.onFocusChange(focusState.isFocused)
+                    bioState.onFocusChanged(focusState.isFocused)
                     if (!focusState.isFocused) {
                         bioState.enableShowErrors()
                     }
                 }
         )
 
-        bioState.getError()?.let { error ->
+        bioState.errorMessage?.let { error ->
             TextFieldError(textError = error)
         }
     }

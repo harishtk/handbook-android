@@ -94,6 +94,8 @@ class AddAccountViewModel @Inject constructor(
                                 categoryId = entry.categoryId
                             )
                         }
+                        savedStateHandle["categoryId"] = entry.categoryId
+                        savedStateHandle["partyId"] = entry.partyId
                     }
                 )
             }

@@ -259,9 +259,7 @@ private fun ColumnScope.AddCategoryFormLayout(
     val descriptionFocusRequester = remember { FocusRequester() }
 
     val displayNameState = DisplayNameState.createTextFieldStateHandler(uiState.name)
-    val descriptionState by rememberSaveable {
-        mutableStateOf(DescriptionState(uiState.description))
-    }
+    val descriptionState = DescriptionState.createTextFieldStateHandler(uiState.description)
 
     var enableDescription by remember { mutableStateOf(false) }
 
@@ -445,7 +443,7 @@ private fun DisplayNameInput(
 @Composable
 private fun DescriptionInput(
     modifier: Modifier = Modifier,
-    bioState: TextFieldState,
+    bioState: TextFieldStateHandler<DescriptionState>,
     onValueChange: (text: String) -> Unit = {},
     enableCharacterCounter: Boolean = false,
     provideFocusRequester: () -> FocusRequester = { FocusRequester() },
@@ -476,7 +474,7 @@ private fun DescriptionInput(
         OutlinedTextField(
             value = bioState.text,
             onValueChange = { text ->
-                bioState.text = text.take(DescriptionLength)
+                bioState.onTextChanged(text.take(DescriptionLength))
                 onValueChange(bioState.text)
             },
             placeholder = {
@@ -520,14 +518,14 @@ private fun DescriptionInput(
                 .heightIn(min = 120.dp)
                 .focusRequester(provideFocusRequester())
                 .onFocusChanged { focusState ->
-                    bioState.onFocusChange(focusState.isFocused)
+                    bioState.onFocusChanged(focusState.isFocused)
                     if (!focusState.isFocused) {
                         bioState.enableShowErrors()
                     }
                 }
         )
 
-        bioState.getError()?.let { error ->
+        bioState.errorMessage?.let { error ->
             TextFieldError(textError = error)
         }
     }

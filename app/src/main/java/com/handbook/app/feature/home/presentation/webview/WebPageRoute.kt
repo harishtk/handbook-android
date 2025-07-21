@@ -8,19 +8,24 @@ import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -34,8 +39,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.viewinterop.AndroidView
 import com.handbook.app.Constant
 import com.handbook.app.core.designsystem.HandbookTopAppBarState
-import com.handbook.app.core.designsystem.component.BestDealsTopAppBar
-import com.handbook.app.core.designsystem.component.HandbookTopAppBar
+import com.handbook.app.core.designsystem.component.HandbookSimpleTopAppBar
 import com.handbook.app.ui.theme.HandbookTheme
 import timber.log.Timber
 
@@ -77,14 +81,12 @@ internal fun WebPageScreen(
 
     Scaffold(
         modifier = Modifier
-            .fillMaxSize()
-            .imePadding(),
+            .fillMaxSize(),
         topBar = {
             Column(
                 modifier = Modifier.fillMaxWidth()
-                    .statusBarsPadding()
             ) {
-                BestDealsTopAppBar(state = topAppBarState)
+                HandbookSimpleTopAppBar(state = topAppBarState)
                 Box(modifier = Modifier.height(IntrinsicSize.Min)) {
                     if (progress <= 0.99F) {
                         LinearProgressIndicator(
@@ -101,7 +103,12 @@ internal fun WebPageScreen(
             Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .consumeWindowInsets(padding),
+                .consumeWindowInsets(padding)
+                .windowInsetsPadding(
+                    WindowInsets.safeDrawing.only(
+                        WindowInsetsSides.Vertical
+                    )
+                ),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {

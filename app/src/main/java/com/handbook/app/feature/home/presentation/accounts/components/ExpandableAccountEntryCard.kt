@@ -10,7 +10,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.snapTo
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -64,8 +63,8 @@ fun ExpandableAccountEntryCard(
     modifier: Modifier = Modifier,
     entryDetails: AccountEntryWithDetails,
     initialExpanded: Boolean = false,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onEditRequest: () -> Unit,
+    onDeleteRequest: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(initialExpanded) }
     val coroutineScope = rememberCoroutineScope()
@@ -82,16 +81,15 @@ fun ExpandableAccountEntryCard(
         when (swipeToDismissBoxState.currentValue) {
             SwipeToDismissBoxValue.StartToEnd -> {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                onEdit()
                 // If it's a toggle, we want it to snap back immediately
                 // without fully "dismissing"
                 coroutineScope.launch {
-                    swipeToDismissBoxState.snapTo(SwipeToDismissBoxValue.Settled)
+                    swipeToDismissBoxState.reset()
                 }
+                onEditRequest()
             }
             SwipeToDismissBoxValue.EndToStart -> {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                onDelete()
                 // For remove, you might let it animate out or also snap back
                 // depending on whether the item is actually removed from the list.
                 // If it's removed from the list, the composable might disappear.
@@ -99,8 +97,9 @@ fun ExpandableAccountEntryCard(
                 coroutineScope.launch {
                     // If item is not immediately removed from list, snap back.
                     // If it is removed, this might not be necessary as the composable will leave composition.
-                    swipeToDismissBoxState.snapTo(SwipeToDismissBoxValue.Settled)
+                    swipeToDismissBoxState.reset()
                 }
+                onDeleteRequest()
             }
             SwipeToDismissBoxValue.Settled -> { /* Do nothing here */ }
         }
@@ -212,8 +211,8 @@ fun ExpandableAccountEntryCard(
                 ) {
                     ExpandedDetailsView(
                         entryDetails = entryDetails,
-                        onEdit = onEdit,
-                        onDelete = onDelete,
+                        onEdit = onEditRequest,
+                        onDelete = onDeleteRequest,
                         modifier = Modifier.padding(top = 12.dp)
                     )
                 }
@@ -553,8 +552,8 @@ fun ExpandableAccountEntryCardPreview() {
                         ),
                     ),
                     initialExpanded = true,
-                    onDelete = { /* Handle delete */ },
-                    onEdit = { /* Handle edit */ }
+                    onDeleteRequest = { /* Handle delete */ },
+                    onEditRequest = { /* Handle edit */ }
 
                 )
             }
@@ -598,16 +597,16 @@ fun ExpandableAccountEntryCardNoPartyOrDescriptionPreview() {
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
                     entryDetails = sampleEntry,
                     initialExpanded = true,
-                    onDelete = { /* Handle delete */ },
-                    onEdit = { /* Handle edit */ }
+                    onDeleteRequest = { /* Handle delete */ },
+                    onEditRequest = { /* Handle edit */ }
                 )
 
                 ExpandableAccountEntryCard(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
                     entryDetails = sampleEntry,
                     initialExpanded = false, // Start non-expanded to test swipe
-                    onDelete = { println("Preview: Delete action triggered for ${sampleEntry.entry.title}") },
-                    onEdit = { println("Preview: Edit action triggered for ${sampleEntry.entry.title}") }
+                    onDeleteRequest = { println("Preview: Delete action triggered for ${sampleEntry.entry.title}") },
+                    onEditRequest = { println("Preview: Edit action triggered for ${sampleEntry.entry.title}") }
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -618,8 +617,8 @@ fun ExpandableAccountEntryCardNoPartyOrDescriptionPreview() {
                         entry = sampleEntry.entry.copy(title = "Another Item (Initially Expanded)")
                     ),
                     initialExpanded = true, // Swipe should be disabled
-                    onDelete = { println("Preview: Delete action triggered for Another Item") },
-                    onEdit = { println("Preview: Edit action triggered for Another Item") }
+                    onDeleteRequest = { println("Preview: Delete action triggered for Another Item") },
+                    onEditRequest = { println("Preview: Edit action triggered for Another Item") }
                 )
             }
         }

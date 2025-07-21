@@ -46,8 +46,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -67,8 +69,8 @@ import androidx.paging.insertSeparators
 import androidx.paging.map
 import com.handbook.app.ObserverAsEvents
 import com.handbook.app.SharedViewModel
+import com.handbook.app.core.designsystem.component.CustomConfirmDialog
 import com.handbook.app.core.designsystem.shimmerBackground
-import com.handbook.app.debugToast
 import com.handbook.app.feature.home.domain.model.AccountEntry
 import com.handbook.app.feature.home.domain.model.AccountEntryFilters
 import com.handbook.app.feature.home.domain.model.AccountEntryWithDetails
@@ -76,6 +78,7 @@ import com.handbook.app.feature.home.domain.model.Category
 import com.handbook.app.feature.home.domain.model.EntryType
 import com.handbook.app.feature.home.domain.model.TransactionType
 import com.handbook.app.feature.home.domain.model.UserSummary
+import com.handbook.app.feature.home.presentation.accounts.FilterBar
 import com.handbook.app.feature.home.presentation.accounts.components.ExpandableAccountEntryCard
 import com.handbook.app.feature.home.presentation.accounts.components.FabOption
 import com.handbook.app.feature.home.presentation.accounts.components.OnMainFabClickBehavior
@@ -108,10 +111,14 @@ internal fun HomeRoute(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val accountEntriesUiState by viewModel.accountEntriesUiState.collectAsStateWithLifecycle()
+    val filtersUiState by viewModel.filtersUiState.collectAsStateWithLifecycle()
+
+    var confirmDeleteItem by remember { mutableStateOf<AccountEntry?>(null) }
 
     HomeScreen(
         modifier = modifier,
         entriesUiState = accountEntriesUiState,
+        filtersUiState = filtersUiState,
         snackbarHostState = snackbarHostState,
         uiAction = viewModel.accept,
         onFabClick = { onAddEntryRequest(0, it) },
@@ -122,6 +129,19 @@ internal fun HomeRoute(
 //    LaunchedEffect(sharedViewModel.feedRefreshSignal) {
 //        viewModel.accept(HomeUiAction.Refresh)
 //    }
+
+    if (confirmDeleteItem != null) {
+        val entry = confirmDeleteItem!!
+        CustomConfirmDialog(
+            title = "Delete Entry",
+            description = "Are you sure you want to delete this entry?\n${entry.title}",
+            onDismiss = { confirmDeleteItem = null },
+            onConfirm = {
+                viewModel.accept(HomeUiAction.DeleteEntry(entry))
+                confirmDeleteItem = null
+            }
+        )
+    }
 
     ObserverAsEvents(viewModel.uiEvent) { event ->
         when (event) {
@@ -136,12 +156,18 @@ internal fun HomeRoute(
             }
 
             is HomeUiEvent.NavigateToEditEntry -> {
-                context.debugToast("Navigate to edit entry: ${event.entry.entryId} ${event.entry.transactionType}")
                 onAddEntryRequest(event.entry.entryId, event.entry.transactionType)
             }
 
             is HomeUiEvent.NavigateToDeleteEntry -> {
                 // Confirm delete
+                confirmDeleteItem = event.entry
+            }
+
+            is HomeUiEvent.OnEntryDeleted -> {
+                scope.launch {
+                    snackbarHostState.showSnackbar("Entry deleted")
+                }
             }
         }
     }
@@ -151,6 +177,7 @@ internal fun HomeRoute(
 internal fun HomeScreen(
     modifier: Modifier = Modifier,
     entriesUiState: AccountEntryUiState = AccountEntryUiState.Idle,
+    filtersUiState: AccountEntryFilters = AccountEntryFilters.None,
     snackbarHostState: SnackbarHostState = SnackbarHostState(),
     uiAction: (HomeUiAction) -> Unit = {},
     onFabClick: (TransactionType) -> Unit = {},
@@ -189,6 +216,11 @@ internal fun HomeScreen(
                         .imePadding(),
                     verticalArrangement = Arrangement.Top,
                 ) {
+                    FilterBar(
+                        currentFilters = filtersUiState,
+                        onFiltersChanged = { uiAction(HomeUiAction.OnFilterChange(it)) },
+                    )
+
                     when (entriesUiState) {
                         is AccountEntryUiState.Error -> {
                             FullScreenErrorLayout(
@@ -284,7 +316,7 @@ private fun SearchResultContent(
         }
 
         if (lazyPagingItems.loadState.refresh is LoadState.Loading) {
-            LoadingIndicator()
+            LoadingScreen()
         } else if (lazyPagingItems.itemCount == 0) {
             Column(
                 modifier = Modifier
@@ -318,10 +350,10 @@ private fun SearchResultContent(
                                 ExpandableAccountEntryCard(
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
                                     entryDetails = item.accountEntryWithDetails,
-                                    onEdit = {
+                                    onEditRequest = {
                                         onUiAction(HomeUiAction.OnEditEntry(item.accountEntryWithDetails.entry))
                                     },
-                                    onDelete = {
+                                    onDeleteRequest = {
                                         onUiAction(HomeUiAction.OnDeleteEntry(item.accountEntryWithDetails.entry))
                                     }
                                 )
