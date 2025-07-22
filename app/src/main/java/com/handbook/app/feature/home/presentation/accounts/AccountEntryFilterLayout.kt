@@ -3,13 +3,23 @@
 package com.handbook.app.feature.home.presentation.accounts
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Indication
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
@@ -18,44 +28,56 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FilterAltOff
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.handbook.app.feature.home.domain.model.AccountEntryFilters
 import com.handbook.app.feature.home.domain.model.EntryType
 import com.handbook.app.feature.home.domain.model.TransactionType
 import com.handbook.app.ui.theme.HandbookTheme
 import kotlinx.datetime.*
+import kotlinx.datetime.format.DateTimeFormat
 import kotlinx.datetime.format.char
 import java.util.Locale
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
-// Data class for representing a specific date range filter option
+// Data class for representing a specific date range filter option (from your original code)
 data class DateRangeFilter(
     val startDateMillis: Long,
     val endDateMillis: Long,
-    val displayLabel: String // e.g., "Today", "Mon"
+    val displayLabel: String
 )
 
+// FilterChipOption (from your original code - ensure it's defined or imported)
+data class FilterChipOption<T>(
+    val label: String,
+    val value: T,
+    val isSelected: Boolean = false // Could be useful if managing selection state outside
+)
+
+
+
 //region Main FilterBar Composable
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FilterBar(
     currentFilters: AccountEntryFilters,
     onFiltersChanged: (AccountEntryFilters) -> Unit,
+    initialExpanded: Boolean = false,
     modifier: Modifier = Modifier,
-    // Example: For dynamic filters like categories/parties, you might pass them as parameters
-    // allCategories: List<FilterChipOption<Long>> = emptyList(),
-    // allParties: List<FilterChipOption<Long>> = emptyList()
 ) {
-    var filtersExpanded by remember { mutableStateOf(false) }
+    var filtersExpanded by remember { mutableStateOf(initialExpanded) }
     val dateFilterOptions = remember { generatePast7DaysDateOptions() }
 
-    // Static lists for Enums - In a real app, dynamic lists (categories, parties)
-    // might be fetched and mapped to FilterChipOption in a ViewModel or passed as parameters.
     val allEntryTypes: List<EntryType> = remember { EntryType.entries.toList() }
     val entryTypeOptions = remember(allEntryTypes) {
         allEntryTypes.map { entryType ->
@@ -78,48 +100,87 @@ fun FilterBar(
         }
     }
 
-    val activeFilterSummary = remember(currentFilters, dateFilterOptions, entryTypeOptions, transactionTypeOptions) {
-        buildList {
-            currentFilters.startDate?.let { start ->
-                currentFilters.endDate?.let { end ->
-                    val matchingDateOption = dateFilterOptions.find { it.startDateMillis == start && it.endDateMillis == end }
-                    add(matchingDateOption?.displayLabel ?: "Date Range")
-                }
-            }
-            currentFilters.entryType?.let { entryType ->
-                entryTypeOptions.find { it.value == entryType }?.label?.let { add(it) }
-            }
-            currentFilters.transactionType?.let { transactionType ->
-                transactionTypeOptions.find { it.value == transactionType }?.label?.let { add(it) }
-            }
-            // currentFilters.categoryId?.let { categoryId ->
-            //     allCategories.find { it.value == categoryId }?.label?.let { add(it) }
-            // }
-            // Add other filters here
-        }.joinToString(", ")
+
+    val activeFilterCount = remember(currentFilters) {
+        var count = 0
+        if (currentFilters.startDate != null) count++
+        if (currentFilters.entryType != null) count++
+        if (currentFilters.transactionType != null) count++
+        count
+    }
+    val anyFilterActive = activeFilterCount > 0
+
+    // Determine the background color and elevation based on state
+    val surfaceColor = when {
+        filtersExpanded -> MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp) // Elevated when expanded
+        anyFilterActive -> MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp) // Slightly elevated if filters are active but collapsed
+        else -> Color.Transparent // Transparent if collapsed and no filters active
+    }
+    val tonalElevation = when {
+        filtersExpanded -> 2.dp
+        anyFilterActive -> 1.dp
+        else -> 0.dp
     }
 
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column( // Changed from Surface to Column as the outer container for more control
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 8.dp)
+            .background(
+                color = surfaceColor,
+                shape = MaterialTheme.shapes.small,
+            ) // Apply background here
+            .clip(MaterialTheme.shapes.small)
+            // .animateContentSize(animationSpec = tween(300))
+    ) {
+        // --- Collapsed Filter Bar Header ---
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { filtersExpanded = !filtersExpanded }
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = ripple(),
+                    onClick = { filtersExpanded = !filtersExpanded }
+                )
                 .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(imageVector = Icons.Default.FilterList, contentDescription = "Filter Icon")
-            if (filtersExpanded) {
-                Text(text = "Hide Filters", style = MaterialTheme.typography.titleSmall)
-            } else {
-                if (activeFilterSummary.isNotEmpty()) {
-                    Text(text = "Filters: $activeFilterSummary", style = MaterialTheme.typography.titleSmall, maxLines = 1)
-                } else {
-                    Text(text = "Show Filters", style = MaterialTheme.typography.titleSmall)
+            Icon(
+                imageVector = Icons.Default.FilterList,
+                contentDescription = "Filter Icon",
+                tint = if (anyFilterActive) MaterialTheme.colorScheme.primary else LocalContentColor.current.copy(alpha = 0.7f)
+            )
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = if (anyFilterActive) "Filters ($activeFilterCount)" else "Filters",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = if (anyFilterActive) FontWeight.SemiBold else FontWeight.Normal,
+                modifier = Modifier.weight(1f)
+            )
+
+            if (anyFilterActive && !filtersExpanded) {
+                // More subtle clear button for collapsed state
+                TextButton(
+                    onClick = {
+                        onFiltersChanged(AccountEntryFilters.None)
+                        filtersExpanded = false
+                    },
+                    modifier = Modifier.height(32.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Clear,
+                        contentDescription = "Clear all filters",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text("Clear", fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
                 }
+                Spacer(Modifier.width(4.dp)) // Reduced spacer
             }
 
-            val rotationAngle by animateFloatAsState(targetValue = if (filtersExpanded) 180f else 0f, label = "expand_icon_rotation")
+            val rotationAngle by animateFloatAsState(targetValue = if (filtersExpanded) 180f else 0f, label = "expand_icon_rotation", animationSpec = tween(300))
             Icon(
                 imageVector = Icons.Default.ExpandMore,
                 contentDescription = if (filtersExpanded) "Collapse filters" else "Expand filters",
@@ -127,27 +188,31 @@ fun FilterBar(
             )
         }
 
-
+        // --- Expandable Filter Options ---
         AnimatedVisibility(
             visible = filtersExpanded,
-            enter = expandVertically(),
-            exit = shrinkVertically()
+            enter = expandVertically(expandFrom = Alignment.Top, animationSpec = tween(300)) + fadeIn(animationSpec = tween(150, delayMillis = 150)),
+            exit = shrinkVertically(shrinkTowards = Alignment.Top, animationSpec = tween(300)) + fadeOut(animationSpec = tween(150))
         ) {
-            Column(modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp, start = 8.dp, end = 8.dp)) {
-                // --- Clear All Filters Button ---
-                val anyFilterActive = currentFilters != AccountEntryFilters.None
+            // Divider only if the surfaceColor isn't transparent (i.e., when expanded or active)
+            if (surfaceColor != Color.Transparent) {
+                HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+            }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 if (anyFilterActive) {
-                    OutlinedButton(
+                    Button(
+                        // Changed to Filled button for more prominence when expanded
                         onClick = {
                             onFiltersChanged(AccountEntryFilters.None)
-                            filtersExpanded = false
+                            filtersExpanded = false // Collapse after clearing
                         },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 8.dp),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+                        modifier = Modifier.fillMaxWidth(),
+                        // colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer)
                     ) {
                         Icon(
                             imageVector = Icons.Default.FilterAltOff,
@@ -155,114 +220,123 @@ fun FilterBar(
                             modifier = Modifier.size(ButtonDefaults.IconSize)
                         )
                         Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                        Text("Clear All Filters")
+                        Text("Clear All Filters ($activeFilterCount)")
                     }
                 }
-                // --- Date Filters ---
-                DateFilterChips(
-                    dateOptions = dateFilterOptions,
+
+                DateFilterChipsScrollable(
                     currentFilters = currentFilters,
                     onDateRangeSelected = { startDate, endDate ->
-                        onFiltersChanged(
-                            currentFilters.copy(
-                                startDate = startDate,
-                                endDate = endDate
-                            )
-                        )
-                    }
+                        onFiltersChanged(currentFilters.copy(startDate = startDate, endDate = endDate))
+                    },
+                    dateOptions = dateFilterOptions
                 )
-
-                Spacer(modifier = Modifier.height(12.dp)) // Spacing between filter groups
-
-                // --- Entry Type Filters ---
-                GenericFilterChipRow(
+                CompactFilterChipGroup(
                     title = "Entry Type",
                     options = entryTypeOptions,
                     selectedSingleValue = currentFilters.entryType,
-                    onOptionSelected = { selectedEntryType ->
-                        onFiltersChanged(currentFilters.copy(entryType = selectedEntryType))
-                    }
+                    onOptionSelected = { onFiltersChanged(currentFilters.copy(entryType = it)) }
                 )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // --- Transaction Type Filters ---
-                GenericFilterChipRow(
+                CompactFilterChipGroup(
                     title = "Transaction Type",
                     options = transactionTypeOptions,
                     selectedSingleValue = currentFilters.transactionType,
-                    onOptionSelected = { selectedTransactionType ->
-                        onFiltersChanged(currentFilters.copy(transactionType = selectedTransactionType))
-                    }
+                    onOptionSelected = { onFiltersChanged(currentFilters.copy(transactionType = it)) }
                 )
-
-                // TODO: Add more GenericFilterChipRow sections for other filter types
-                /*
-                if (allCategories.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    GenericFilterChipRow(
-                        title = "Category",
-                        options = allCategories,
-                        selectedSingleValue = currentFilters.categoryId,
-                        onOptionSelected = { selectedCategoryId ->
-                            onFiltersChanged(currentFilters.copy(categoryId = selectedCategoryId))
-                        }
-                    )
-                }*/
             }
         }
     }
 }
 //endregion
 
+//region Refined Chip Groups
+
 /**
- * Composable that displays a row of filter chips for selecting a date range
- * from the past 7 days, including today.
+ * A horizontally scrollable row of date filter chips.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DateFilterChips(
+fun DateFilterChipsScrollable(
     currentFilters: AccountEntryFilters,
     onDateRangeSelected: (startDateMillis: Long?, endDateMillis: Long?) -> Unit,
     modifier: Modifier = Modifier,
-    dateOptions: List<DateRangeFilter> = remember { generatePast7DaysDateOptions() } // Allow pre-generated options
+    dateOptions: List<DateRangeFilter>
 ) {
-    // Determine the initially selected index based on currentFilters
-    var selectedIndex by remember(currentFilters.startDate, currentFilters.endDate, dateOptions) {
-        mutableStateOf(
-            dateOptions.indexOfFirst {
-                it.startDateMillis == currentFilters.startDate && it.endDateMillis == currentFilters.endDate
-            }.takeIf { it != -1 } // Result is -1 if not found, takeIf makes it null
-        )
-    }
+    Column(modifier.fillMaxWidth()) {
+        Text("Date Range", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+        Spacer(Modifier.height(8.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            val selectedDateRangeKey = currentFilters.startDate?.let { start -> currentFilters.endDate?.let { end -> "$start-$end" } }
 
-    SecondaryScrollableTabRow(
-        selectedTabIndex = selectedIndex ?: -1,
-        modifier = modifier.fillMaxWidth(),
-        edgePadding = 8.dp, // Still applicable and useful
-        indicator = { /* No indicator by default for chip-like style */ },
-        divider = { /* No divider by default */ }
-    ) {
-        dateOptions.forEachIndexed { index, dateOption ->
-            FilterChipTab(
-                text = dateOption.displayLabel,
-                selected = selectedIndex == index,
-                onClick = {
-                    if (selectedIndex == index) {
-                        selectedIndex = null
-                        onDateRangeSelected(null, null)
-                    } else {
-                        selectedIndex = index
-                        onDateRangeSelected(dateOption.startDateMillis, dateOption.endDateMillis)
-                    }
-                },
-            )
+            dateOptions.forEach { dateOption ->
+                val isSelected = selectedDateRangeKey == "${dateOption.startDateMillis}-${dateOption.endDateMillis}"
+                FilterChip(
+                    selected = isSelected,
+                    onClick = {
+                        if (isSelected) {
+                            onDateRangeSelected(null, null)
+                        } else {
+                            onDateRangeSelected(dateOption.startDateMillis, dateOption.endDateMillis)
+                        }
+                    },
+                    label = { Text(dateOption.displayLabel) },
+                    shape = CircleShape // More compact chip shape
+                )
+            }
         }
     }
 }
 
+
 /**
- * Generates a list of [DateRangeFilter] options for the past 7 days, including today.
+ * A more compact filter chip group with a title and horizontally scrollable chips.
  */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun <T> CompactFilterChipGroup(
+    title: String,
+    options: List<FilterChipOption<T>>,
+    selectedSingleValue: T?,
+    onOptionSelected: (T?) -> Unit, // Allow deselecting by passing null
+    modifier: Modifier = Modifier
+) {
+    Column(modifier.fillMaxWidth()) {
+        Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+        Spacer(Modifier.height(8.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            options.forEach { option ->
+                val isSelected = selectedSingleValue == option.value
+                FilterChip(
+                    selected = isSelected,
+                    onClick = {
+                        if (isSelected) {
+                            onOptionSelected(null) // Deselect if clicked again
+                        } else {
+                            onOptionSelected(option.value)
+                        }
+                    },
+                    label = { Text(option.label, fontSize = 13.sp) }, // Slightly smaller font
+                    shape = CircleShape // More compact chip shape
+                )
+            }
+        }
+    }
+}
+
+//endregion
+
+// Helper to generate date options (from your original code - ensure it's accessible)
 fun generatePast7DaysDateOptions(): List<DateRangeFilter> {
     val options = mutableListOf<DateRangeFilter>()
     val systemTimeZone = TimeZone.currentSystemDefault()
@@ -277,305 +351,133 @@ fun generatePast7DaysDateOptions(): List<DateRangeFilter> {
             displayLabel = "Today"
         )
     )
-
     // Yesterday
     val yesterday = today.minus(1, DateTimeUnit.DAY)
     options.add(
         DateRangeFilter(
             startDateMillis = yesterday.atStartOfDayIn(systemTimeZone).toEpochMilliseconds(),
-            endDateMillis = yesterday.plus(1, DateTimeUnit.DAY).atStartOfDayIn(systemTimeZone)
-                .toEpochMilliseconds() - 1,
+            endDateMillis = today.atStartOfDayIn(systemTimeZone).toEpochMilliseconds() - 1,
             displayLabel = "Yesterday"
         )
     )
-
-    // Last 5 days before yesterday (total of 7 days)
-    for (i in 2..6) { // This loop runs 5 times for days 2 to 6 days ago
+    // Past 7 Days (as individual days for more granular selection if desired, or keep as ranges)
+    for (i in 2..6) {
         val date = today.minus(i, DateTimeUnit.DAY)
         options.add(
             DateRangeFilter(
                 startDateMillis = date.atStartOfDayIn(systemTimeZone).toEpochMilliseconds(),
                 endDateMillis = date.plus(1, DateTimeUnit.DAY).atStartOfDayIn(systemTimeZone)
                     .toEpochMilliseconds() - 1,
-                displayLabel = date.format(
-                    kotlinx.datetime.LocalDate.Format {
-                        day()
-                        char('-')
-                        monthNumber()
-                        char('-')
-                        year()
-                    }
-                )
-                    /*date.dayOfWeek.getShortDayName()*/
+                displayLabel = date.format(LocalDate.Format {
+                    day(); char('-'); monthNumber(); char('-'); year()
+                })
             )
         )
     }
-    return options
+    return options.reversed() // Show "Today" first
 }
 
-//region Data Models (Some might be defined elsewhere in your project)
-// --- Generic Filter Option ---
-data class FilterChipOption<T>(
-    val label: String,
-    val value: T
-)
 
-//endregion
-/**
- * A generic composable to display a scrollable row of filter chips for any type T.
- * Allows single selection.
- */
-@Composable
-fun <T> GenericFilterChipRow(
-    title: String?, // Optional title for this filter section
-    options: List<FilterChipOption<T>>,
-    selectedSingleValue: T?, // The currently selected value for this filter type from the parent state
-    onOptionSelected: (T?) -> Unit, // Callback when an option is selected (null if deselected)
-    modifier: Modifier = Modifier
-) {
-    // This internal 'selectedLocalValue' helps manage the visual selection state
-    // and decide when to call 'onOptionSelected'.
-    // It's reset if the 'selectedSingleValue' from the parent changes externally.
-    var selectedLocalValue by remember(selectedSingleValue) { mutableStateOf(selectedSingleValue) }
-
-    Column(modifier = modifier.fillMaxWidth()) {
-        title?.let {
-            Text(
-                text = it,
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier
-                    .padding(start = 16.dp, top = 12.dp, bottom = 4.dp) // Added top padding
-            )
-        }
-        SecondaryScrollableTabRow(
-            selectedTabIndex = options.indexOfFirst { it.value == selectedLocalValue }
-                .takeIf { it != -1 } ?: -1,
-            modifier = Modifier.fillMaxWidth(),
-            edgePadding = 8.dp,
-            indicator = { /* No indicator */ },
-            divider = { /* No divider */ }
-        ) {
-            options.forEach { option ->
-                FilterChipTab(
-                    text = option.label,
-                    selected = option.value == selectedLocalValue,
-                    onClick = {
-                        val newValue = if (selectedLocalValue == option.value) {
-                            null // Deselect if clicking the same item
-                        } else {
-                            option.value // Select new item
-                        }
-                        selectedLocalValue = newValue // Update local visual state
-                        onOptionSelected(newValue)    // Notify parent
-                    },
-                    modifier = Modifier.padding(horizontal = 2.dp)
-                )
-            }
-        }
-    }
-}
-
-//endregion
-//region Reusable FilterChipTab (Visual element for each chip)
-@Composable
-fun FilterChipTab(
-    text: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Tab(
-        selected = selected,
-        onClick = onClick,
-        modifier = modifier,
-        selectedContentColor = MaterialTheme.colorScheme.onPrimary,
-        unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        interactionSource = remember { MutableInteractionSource() }
-    ) {
-        Surface(
-            shape = MaterialTheme.shapes.medium,
-            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest,
-            border = if (!selected) BorderStroke(1.dp, MaterialTheme.colorScheme.outline) else null,
-            modifier = Modifier
-                .padding(vertical = 6.dp, horizontal = 4.dp)
-                .defaultMinSize(minHeight = 32.dp)
-        ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-            ) {
-                Text(
-                    text = text,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal
-                )
-            }
-        }
-    }
-}
-
-//endregion
-
-//region Preview for GenericFilterChipRow
+//region Preview
 @Preview(showBackground = true, widthDp = 380)
 @Composable
-fun GenericFilterChipRowPreview() {
-    // Sample data for EntryType
-    val allEntryTypes = EntryType.entries.toList()
-    val entryTypeOptions = remember(allEntryTypes) {
-        allEntryTypes.map { entryType ->
-            FilterChipOption(
-                label = entryType.name.replace("_", " ").lowercase()
-                    .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() },
-                value = entryType
-            )
-        }
-    }
-    var selectedEntryType by remember { mutableStateOf<EntryType?>(null) }
-
-    // Sample data for TransactionType
-    val allTransactionTypes = TransactionType.entries.toList()
-    val transactionTypeOptions = remember(allTransactionTypes) {
-        allTransactionTypes.map { tt ->
-            FilterChipOption(
-                label = tt.name.lowercase().replaceFirstChar { it.titlecase(Locale.getDefault()) },
-                value = tt
-            )
-        }
-    }
-    var selectedTransactionType by remember { mutableStateOf<TransactionType?>(TransactionType.INCOME) }
-
-
-    HandbookTheme { // Assuming your theme is HandbookTheme
-        Column(Modifier.padding(16.dp)) {
-            GenericFilterChipRow(
-                title = "Entry Type",
-                options = entryTypeOptions,
-                selectedSingleValue = selectedEntryType,
-                onOptionSelected = { newSelection ->
-                    selectedEntryType = newSelection
-                    println("Selected Entry Type: $newSelection")
-                }
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            GenericFilterChipRow(
-                title = "Transaction Type",
-                options = transactionTypeOptions,
-                selectedSingleValue = selectedTransactionType,
-                onOptionSelected = { newSelection ->
-                    selectedTransactionType = newSelection
-                    println("Selected Transaction Type: $newSelection")
-                }
-            )
-
-            Spacer(Modifier.height(16.dp))
-            Text("Current selected EntryType: ${selectedEntryType?.name ?: "None"}")
-            Text("Current selected TransactionType: ${selectedTransactionType?.name ?: "None"}")
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { selectedEntryType = EntryType.CASH }) { Text("Select CASH") }
-                Button(onClick = { selectedEntryType = null }) { Text("Clear EntryType") }
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = {
-                    selectedTransactionType = TransactionType.EXPENSE
-                }) { Text("Select EXPENSE") }
-                Button(onClick = { selectedTransactionType = null }) { Text("Clear TxType") }
-            }
-        }
-    }
-}
-
-@Preview(showBackground = true, widthDp = 380)
-@Composable
-fun DateFilterChipsPreview() {
-    var currentFilters by remember { mutableStateOf(AccountEntryFilters.None) }
+fun FilterBarPreview_Collapsed_NoFilters() {
     HandbookTheme(
         androidTheme = true,
         disableDynamicTheming = true
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            DateFilterChips(
-                currentFilters = currentFilters,
-                onDateRangeSelected = { startDate, endDate ->
-                    currentFilters = currentFilters.copy(startDate = startDate, endDate = endDate)
-                    println("Selected range: $startDate to $endDate")
-                }
+        FilterBar(
+            currentFilters = AccountEntryFilters.None,
+            onFiltersChanged = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, widthDp = 380)
+@Composable
+fun FilterBarPreview_Collapsed_ActiveFilters() {
+    HandbookTheme(
+        androidTheme = true,
+        disableDynamicTheming = true
+    ) {
+        FilterBar(
+            currentFilters = AccountEntryFilters(
+                startDate = Clock.System.now().toEpochMilliseconds() - (24 * 60 * 60 * 1000), // Yesterday
+                endDate = Clock.System.now().toEpochMilliseconds(),
+                entryType = EntryType.OTHER
+            ),
+            onFiltersChanged = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, widthDp = 380)
+@Composable
+fun FilterBarPreview_Expanded_NoFilters() {
+    val (filters, setFilters) = remember { mutableStateOf(AccountEntryFilters.None) }
+    HandbookTheme(
+        androidTheme = true,
+        disableDynamicTheming = true
+    ) {
+        Column {
+            FilterBar(
+                currentFilters = filters,
+                onFiltersChanged = setFilters
             )
-
-            Spacer(Modifier.height(20.dp))
-            Text("Current startDate: ${currentFilters.startDate}")
-            Text("Current endDate: ${currentFilters.endDate}")
-
-            // Button to test selecting "Today" externally
-            Button(onClick = {
-                val todayRange = generatePast7DaysDateOptions().first()
-                currentFilters = currentFilters.copy(
-                    startDate = todayRange.startDateMillis,
-                    endDate = todayRange.endDateMillis
-                )
-            }) {
-                Text("Select Today Externally")
-            }
-            // Button to test clearing selection
-            Button(onClick = {
-                currentFilters = currentFilters.copy(
-                    startDate = null,
-                    endDate = null
-                )
-            }) {
-                Text("Clear Selection Externally")
-            }
+            // Add some dummy content below to see interaction
+            Text("Content Below Filters", modifier = Modifier.padding(16.dp))
         }
     }
 }
 
 @Preview(showBackground = true, widthDp = 380)
 @Composable
-fun FilterBarPreview() {
-    var currentFilters by remember { mutableStateOf(AccountEntryFilters.None) }
-
-    // Example dynamic options for preview (normally from ViewModel/Repo)
-    // val previewCategoryOptions = remember {
-    //     listOf(
-    //         FilterChipOption("Food", 1L),
-    //         FilterChipOption("Transport", 2L),
-    //         FilterChipOption("Shopping", 3L)
-    //     )
-    // }
-
-    HandbookTheme {
-        Column(Modifier
-            .fillMaxSize()
-            .padding(8.dp)) {
-            FilterBar(
-                currentFilters = currentFilters,
-                onFiltersChanged = { updatedFilters ->
-                    currentFilters = updatedFilters
-                    println("FilterBarPreview: Filters updated to: $updatedFilters")
-                }
-                // allCategories = previewCategoryOptions // Example of passing dynamic options
+fun FilterBarPreview_Expanded_ActiveFilters() {
+    val (filters, setFilters) = remember {
+        mutableStateOf(
+            AccountEntryFilters(
+                startDate = generatePast7DaysDateOptions().first().startDateMillis,
+                endDate = generatePast7DaysDateOptions().first().endDateMillis,
+                entryType = EntryType.OTHER,
+                transactionType = TransactionType.EXPENSE
             )
-
-            Spacer(Modifier.height(20.dp))
-            Text("Current Filters State:", style = MaterialTheme.typography.titleMedium)
-            Text("Start Date: ${currentFilters.startDate}")
-            Text("End Date: ${currentFilters.endDate}")
-            Text("Entry Type: ${currentFilters.entryType}")
-            Text("Transaction Type: ${currentFilters.transactionType}")
-            Text("Category ID: ${currentFilters.categoryId}")
-
-            // Buttons to test clearing filters externally
-            Spacer(Modifier.height(10.dp))
-            Button(onClick = { currentFilters = AccountEntryFilters.None }) {
-                Text("Clear All Filters Externally")
-            }
+        )
+    }
+    HandbookTheme(
+        androidTheme = true,
+        disableDynamicTheming = true
+    ) {
+        Column {
+            FilterBar(
+                currentFilters = filters,
+                onFiltersChanged = setFilters
+            )
+            Text("Content Below Filters", modifier = Modifier.padding(16.dp))
         }
     }
 }
 //endregion
+
+@Preview(showBackground = true, widthDp = 380)
+@Composable
+private fun FilterBarPreview() {
+    HandbookTheme(
+        androidTheme = true,
+        disableDynamicTheming = true,
+    ) {
+        var filters by remember { mutableStateOf(AccountEntryFilters.None) }
+
+        FilterBar(
+            currentFilters = filters,
+            onFiltersChanged = {
+                filters = it
+            },
+            initialExpanded = true,
+        )
+    }
+}
+
+
 
 fun DayOfWeek.getShortDayName(): String {
     return when (this) {

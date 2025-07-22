@@ -16,20 +16,22 @@ import com.handbook.app.core.util.fold
 import com.handbook.app.feature.home.domain.model.AccountEntry
 import com.handbook.app.feature.home.domain.model.AccountEntryFilters
 import com.handbook.app.feature.home.domain.model.AccountEntryWithDetails
+import com.handbook.app.feature.home.domain.model.SortOption
 import com.handbook.app.feature.home.domain.repository.AccountsRepository
 import com.handbook.app.feature.home.domain.repository.PostRepository
+import com.handbook.app.feature.home.presentation.accounts.TemporarySheetFilters
+import com.handbook.app.filteredDelay
 import com.handbook.app.ifDebug
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -58,15 +60,16 @@ class HomeViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    private val _filtersUiState = MutableStateFlow(AccountEntryFilters.None)
-    val filtersUiState = _filtersUiState
+    private val _filterUiState: MutableStateFlow<FilterUiState> = MutableStateFlow(FilterUiState())
+    val filterUiState = _filterUiState
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = AccountEntryFilters.None
+            initialValue = FilterUiState()
         )
 
-    private val accountEntriesPagingSource = filtersUiState
+    private val accountEntriesPagingSource = _filterUiState.map { it.activeFilters }
+        .distinctUntilChanged()
         .flatMapLatest { filters ->
             accountsRepository.getAccountEntriesPagingSource(filters)
                 .map { pagingData ->
@@ -80,7 +83,8 @@ class HomeViewModel @Inject constructor(
         }
         .cachedIn(viewModelScope)
 
-    val accountEntriesUiState: StateFlow<AccountEntryUiState> = _filtersUiState
+    val accountEntriesUiState: StateFlow<AccountEntryUiState> = _filterUiState.map { it.activeFilters }
+        .distinctUntilChanged()
         .flatMapLatest { filters ->
             flowOf<AccountEntryUiState>(
                 AccountEntryUiState.Success(
@@ -94,6 +98,10 @@ class HomeViewModel @Inject constructor(
                     emit(parseAccountEntriesError(it))
                 }
         }
+        .filteredDelay(
+            loadingItemPredicate = { it is AccountEntryUiState.Loading },
+            minDelayFromLoadingItem = 700L,
+        )
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
@@ -105,8 +113,27 @@ class HomeViewModel @Inject constructor(
 
     val accept: (HomeUiAction) -> Unit
 
+    // Public acceptor for filter UI actions
+    val acceptFilterAction: (FilterUiAction) -> Unit
+
     init {
         accept = { uiAction -> onUiAction(uiAction) }
+        acceptFilterAction = { action ->
+            viewModelScope.launch { // Launching a coroutine here if handlers are suspend or long-running
+                handleFilterUiAction(action)
+            }
+        }
+    }
+
+    private fun handleFilterUiAction(action: FilterUiAction) {
+        when (action) {
+            FilterUiAction.OpenFilterSheet -> onOpenFilterSheet()
+            FilterUiAction.DismissFilterSheet -> onDismissFilterSheet()
+            is FilterUiAction.UpdateTemporaryFilters -> onTemporaryFiltersChanged(action.newFilters)
+            FilterUiAction.ApplyFilters -> onApplyFilters()
+            FilterUiAction.ResetTemporaryFilters -> onResetAllTemporaryFilters()
+            FilterUiAction.ApplyAndResetFilters -> onApplyResetFilters()
+        }
     }
 
     private fun onUiAction(action: HomeUiAction) {
@@ -132,7 +159,7 @@ class HomeViewModel @Inject constructor(
             }
 
             is HomeUiAction.OnFilterChange -> {
-                _filtersUiState.update { action.filters }
+                // _filterUiState.update { action.filters }
             }
         }
     }
@@ -154,6 +181,83 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private fun onOpenFilterSheet() {
+        _filterUiState.update { currentState ->
+            currentState.copy(
+                showFilterSheet = true,
+                temporaryFilters = TemporarySheetFilters.fromActive(
+                    activeFiltersToActiveScreenFilters(currentState.activeFilters)
+                )
+            )
+        }
+    }
+
+    private fun onDismissFilterSheet() {
+        _filterUiState.update { it.copy(showFilterSheet = false) }
+    }
+
+    private fun onTemporaryFiltersChanged(newTemporaryFilters: TemporarySheetFilters) {
+        _filterUiState.update {
+            it.copy(temporaryFilters = newTemporaryFilters)
+        }
+    }
+
+    private fun onApplyFilters() {
+        _filterUiState.update { currentState ->
+            val newActiveFilters = currentState.temporaryFilters.toAccountEntryFilters()
+            currentState.copy(
+                showFilterSheet = false,
+                activeFilters = activeScreenFiltersToAccountEntryFilters(newActiveFilters)
+            )
+        }
+    }
+
+    private fun onResetAllTemporaryFilters() {
+        _filterUiState.update { currentState ->
+            val defaultSort = currentState.temporaryFilters.sortBy
+            currentState.copy(
+                temporaryFilters = TemporarySheetFilters(sortBy = defaultSort)
+            )
+        }
+    }
+
+    private fun onApplyResetFilters() {
+        _filterUiState.update { currentState ->
+            val defaultSort = currentState.temporaryFilters.sortBy
+            currentState.copy(
+                showFilterSheet = false,
+                activeFilters = AccountEntryFilters.None.copy(
+                    // sortBy = defaultSort // if your AccountEntryFilters supports this
+                ),
+                temporaryFilters = TemporarySheetFilters(sortBy = defaultSort)
+            )
+        }
+    }
+
+
+    // --- Helper Conversion Functions (Keep these as they are) ---
+    private fun activeFiltersToActiveScreenFilters(accountFilters: AccountEntryFilters): AccountEntryFilters {
+        // ... implementation
+        return AccountEntryFilters(
+            startDate = accountFilters.startDate,
+            endDate = accountFilters.endDate,
+            entryType = accountFilters.entryType,
+            transactionType = accountFilters.transactionType,
+            sortBy = accountFilters.sortBy ?: SortOption.NEWEST_FIRST // Assuming AccountEntryFilters.sortBy is nullable
+        )
+    }
+
+    private fun activeScreenFiltersToAccountEntryFilters(screenFilters: AccountEntryFilters): AccountEntryFilters {
+        // ... implementation
+        return AccountEntryFilters(
+            startDate = screenFilters.startDate,
+            endDate = screenFilters.endDate,
+            entryType = screenFilters.entryType,
+            transactionType = screenFilters.transactionType,
+            sortBy = screenFilters.sortBy
+        )
+    }
+
     fun Long.toLocalDateTime(): LocalDateTime {
         return Instant.fromEpochMilliseconds(this).toLocalDateTime(TimeZone.currentSystemDefault())
     }
@@ -162,7 +266,7 @@ class HomeViewModel @Inject constructor(
         val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
 
         if (after == null) { // We're at the end of the list
-            return null;
+            return null
         }
 
         // Only consider inserting a separator if 'after' is an actual data item
@@ -199,6 +303,12 @@ class HomeViewModel @Inject constructor(
     }
 }
 
+data class FilterUiState(
+    val showFilterSheet: Boolean = false,
+    val temporaryFilters: TemporarySheetFilters = TemporarySheetFilters(),
+    val activeFilters: AccountEntryFilters = AccountEntryFilters.None,
+)
+
 sealed interface AccountEntryUiState {
     data object Loading : AccountEntryUiState
     data object Idle : AccountEntryUiState
@@ -222,6 +332,15 @@ sealed interface HomeUiAction {
     data class OnEditEntry(val entry: AccountEntry) : HomeUiAction
     data class OnDeleteEntry(val entry: AccountEntry) : HomeUiAction
     data class DeleteEntry(val entry: AccountEntry) : HomeUiAction
+}
+
+sealed interface FilterUiAction {
+    data object OpenFilterSheet : FilterUiAction
+    data object DismissFilterSheet : FilterUiAction
+    data class UpdateTemporaryFilters(val newFilters: TemporarySheetFilters) : FilterUiAction
+    data object ApplyFilters : FilterUiAction
+    data object ResetTemporaryFilters : FilterUiAction
+    data object ApplyAndResetFilters : FilterUiAction // If "Reset All" also applies
 }
 
 sealed interface HomeUiEvent {

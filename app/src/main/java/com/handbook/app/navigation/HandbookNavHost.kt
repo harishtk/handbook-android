@@ -26,6 +26,7 @@ import com.handbook.app.feature.home.navigation.searchGraph
 import com.handbook.app.feature.home.navigation.settingsGraph
 import com.handbook.app.feature.home.navigation.webPageScreen
 import com.handbook.app.feature.home.presentation.miscellaneous.SampleRoute
+import com.handbook.app.feature.onboard.navigation.authGraph
 import com.handbook.app.ui.HandbookAppState
 import timber.log.Timber
 
@@ -49,6 +50,11 @@ fun HandbookNavHost(
         popExitTransition = popExitTransition,
         modifier = modifier
     ) {
+        authGraph(
+            navController = navController,
+            onBackClick = navController::popBackStack,
+        )
+
         // TODO: add navigation items
         homeGraph(
             navController = navController,

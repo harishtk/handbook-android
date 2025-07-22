@@ -13,7 +13,9 @@ import com.google.gson.Gson
 import com.handbook.app.BuildConfig
 import com.handbook.app.common.util.JsonParser
 import com.handbook.app.common.util.Util
+import com.handbook.app.core.data.repository.DefaultAuthSharedRepository
 import com.handbook.app.core.data.repository.NoopUserDataRepository
+import com.handbook.app.core.domain.repository.AuthSharedRepository
 import com.handbook.app.core.domain.repository.UserDataRepository
 import com.handbook.app.core.persistence.DefaultPersistentStore
 import com.handbook.app.core.persistence.PersistentStore
@@ -96,9 +98,16 @@ object AppModule {
 interface AppBinderModule {
 
     @Binds
+    @Singleton
     fun bindsUserDataRepository(
         userDataRepository: NoopUserDataRepository
     ): UserDataRepository
+
+    @Binds
+    @Singleton
+    fun bindsAuthSharedRepository(
+        authSharedRepository: DefaultAuthSharedRepository
+    ): AuthSharedRepository
 }
 
 @Qualifier

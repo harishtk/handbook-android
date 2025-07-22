@@ -46,7 +46,12 @@ interface AccountEntryDao {
     AND (:startDate IS NULL OR transaction_date >= :startDate)
     AND (:endDate IS NULL OR transaction_date <= :endDate)
     AND (:titleQuery IS NULL OR title LIKE '%' || :titleQuery || '%')
-    ORDER BY transaction_date DESC
+    ORDER BY
+        CASE WHEN :sortBy = 'NEWEST_FIRST' THEN transaction_date END DESC,
+        CASE WHEN :sortBy = 'OLDEST_FIRST' THEN transaction_date END ASC,
+        CASE WHEN :sortBy = 'AMOUNT_HIGH_LOW' THEN amount END DESC,
+        CASE WHEN :sortBy = 'AMOUNT_LOW_HIGH' THEN amount END ASC,
+        transaction_date DESC
 """)
     fun getFilteredEntries(
         categoryId: Long? = null,
@@ -55,7 +60,8 @@ interface AccountEntryDao {
         transactionType: String? = null, // Pass enum.name or use TypeConverter
         startDate: Long? = null,
         endDate: Long? = null,
-        titleQuery: String? = null
+        titleQuery: String? = null,
+        sortBy: String? = "NEWEST_FIRST"
     ): Flow<List<AccountEntryWithDetailsEntity>>
 
     @Transaction
@@ -68,7 +74,12 @@ interface AccountEntryDao {
     AND (:startDate IS NULL OR transaction_date >= :startDate)
     AND (:endDate IS NULL OR transaction_date <= :endDate)
     AND (:titleQuery IS NULL OR title LIKE '%' || :titleQuery || '%')
-    ORDER BY transaction_date DESC
+    ORDER BY
+        CASE WHEN :sortBy = 'NEWEST_FIRST' THEN transaction_date END DESC,
+        CASE WHEN :sortBy = 'OLDEST_FIRST' THEN transaction_date END ASC,
+        CASE WHEN :sortBy = 'AMOUNT_HIGH_LOW' THEN amount END DESC,
+        CASE WHEN :sortBy = 'AMOUNT_LOW_HIGH' THEN amount END ASC,
+        transaction_date DESC
 """)
     fun getFilteredEntriesPagingSource(
         categoryId: Long? = null,
@@ -77,7 +88,8 @@ interface AccountEntryDao {
         transactionType: String? = null, // Pass enum.name or use TypeConverter
         startDate: Long? = null,
         endDate: Long? = null,
-        titleQuery: String? = null
+        titleQuery: String? = null,
+        sortBy: String? = "NEWEST_FIRST"
     ): PagingSource<Int, AccountEntryWithDetailsEntity>
 
     @Transaction

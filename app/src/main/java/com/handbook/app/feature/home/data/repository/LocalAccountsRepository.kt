@@ -53,7 +53,8 @@ class LocalAccountsRepository @Inject constructor(
                     entryType = filters.entryType?.name,
                     transactionType = filters.transactionType?.name,
                     startDate = filters.startDate,
-                    endDate = filters.endDate
+                    endDate = filters.endDate,
+                    sortBy = filters.sortBy?.name
                 )
             }
         ).flow

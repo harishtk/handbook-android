@@ -1,10 +1,10 @@
 @file:OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
 
-
 package com.handbook.app.feature.home.presentation.landing
 
 import android.widget.Toast
 import androidx.activity.compose.ReportDrawnWhen
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -35,14 +37,25 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.NorthEast
 import androidx.compose.material.icons.filled.SouthWest
+import androidx.compose.material.icons.outlined.FilterAlt
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedAssistChip
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.Surface
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -50,12 +63,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.view.isVisible
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.LoadState
@@ -78,17 +93,23 @@ import com.handbook.app.feature.home.domain.model.Category
 import com.handbook.app.feature.home.domain.model.EntryType
 import com.handbook.app.feature.home.domain.model.TransactionType
 import com.handbook.app.feature.home.domain.model.UserSummary
-import com.handbook.app.feature.home.presentation.accounts.FilterBar
+import com.handbook.app.feature.home.presentation.accounts.FilterSheetContent
+import com.handbook.app.feature.home.presentation.accounts.TemporarySheetFilters
 import com.handbook.app.feature.home.presentation.accounts.components.ExpandableAccountEntryCard
 import com.handbook.app.feature.home.presentation.accounts.components.FabOption
 import com.handbook.app.feature.home.presentation.accounts.components.OnMainFabClickBehavior
 import com.handbook.app.feature.home.presentation.accounts.components.SpeedDialFab
 import com.handbook.app.feature.home.presentation.accounts.components.SpeedDialState
 import com.handbook.app.feature.home.presentation.profile.FullScreenErrorLayout
+import com.handbook.app.filteredDelay
+import com.handbook.app.ui.defaultSpacerSize
 import com.handbook.app.ui.theme.DarkGreen
 import com.handbook.app.ui.theme.DarkRed
 import com.handbook.app.ui.theme.HandbookTheme
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -111,14 +132,15 @@ internal fun HomeRoute(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val accountEntriesUiState by viewModel.accountEntriesUiState.collectAsStateWithLifecycle()
-    val filtersUiState by viewModel.filtersUiState.collectAsStateWithLifecycle()
+    val filterUiState by viewModel.filterUiState.collectAsStateWithLifecycle()
 
     var confirmDeleteItem by remember { mutableStateOf<AccountEntry?>(null) }
 
     HomeScreen(
         modifier = modifier,
         entriesUiState = accountEntriesUiState,
-        filtersUiState = filtersUiState,
+        filterUiState = filterUiState,
+        filterUiAction = viewModel.acceptFilterAction,
         snackbarHostState = snackbarHostState,
         uiAction = viewModel.accept,
         onFabClick = { onAddEntryRequest(0, it) },
@@ -177,18 +199,34 @@ internal fun HomeRoute(
 internal fun HomeScreen(
     modifier: Modifier = Modifier,
     entriesUiState: AccountEntryUiState = AccountEntryUiState.Idle,
-    filtersUiState: AccountEntryFilters = AccountEntryFilters.None,
+    filterUiState: FilterUiState = FilterUiState(),
+    filterUiAction: (FilterUiAction) -> Unit,
     snackbarHostState: SnackbarHostState = SnackbarHostState(),
     uiAction: (HomeUiAction) -> Unit = {},
     onFabClick: (TransactionType) -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
 ) {
-
     // This code should be called when UI is ready for use and relates to Time To Full Display.
     ReportDrawnWhen { true /* Add custom conditions here. eg. !isSyncing */ }
 
     // val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val speedDialState = SpeedDialState.rememberSpeedDialState()
+
+    val filterSheetState = rememberModalBottomSheetState()
+
+    LaunchedEffect(filterUiState.showFilterSheet, filterSheetState) {
+        if (filterUiState.showFilterSheet) {
+            // Ensure any previous dismiss actions are complete before trying to show
+            // This can sometimes help if the sheet was in the process of hiding.
+            if (!filterSheetState.isVisible) { // Only call show if it's not already trying to be visible
+                filterSheetState.show()
+            }
+        } else {
+            if (filterSheetState.isVisible) { // Only call hide if it's currently visible or about to be
+                filterSheetState.hide()
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -216,33 +254,81 @@ internal fun HomeScreen(
                         .imePadding(),
                     verticalArrangement = Arrangement.Top,
                 ) {
-                    FilterBar(
-                        currentFilters = filtersUiState,
-                        onFiltersChanged = { uiAction(HomeUiAction.OnFilterChange(it)) },
-                    )
-
-                    when (entriesUiState) {
-                        is AccountEntryUiState.Error -> {
-                            FullScreenErrorLayout(
-                                errorMessage = entriesUiState.errorMessage,
-                                onClick = { uiAction(HomeUiAction.Refresh) }
+                    Row(
+                        Modifier.fillMaxWidth()
+                            .padding(end = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val activeFilterCount = filterUiState.activeFilters.count()
+                        if (activeFilterCount > 0) {
+                            AssistChip(
+                                onClick = { filterUiAction(FilterUiAction.ApplyAndResetFilters) },
+                                label = { Text("Clear Filters ($activeFilterCount)") },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = "Clear Filters",
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                },
+                                modifier = Modifier.padding(start = 16.dp)
                             )
+                        } else {
+                            // Empty spacer to keep the filter icon to the right
+                            Spacer(modifier = Modifier.weight(1f))
                         }
 
-                        AccountEntryUiState.Idle -> {}
-                        AccountEntryUiState.Loading -> {
-                            LoadingScreen()
+                        BadgedBox(
+                            badge = {
+                                if (activeFilterCount > 0) {
+                                    Badge(
+                                        modifier = Modifier.padding(0.dp) // Surface border
+                                            .offset(x = (-4).dp, y = 4.dp)
+                                    ) {
+                                        Text(
+                                            "$activeFilterCount"
+                                        )
+                                    }
+                                }
+                            }
+                        ) {
+                            // Pass the action to the ViewModel's acceptor
+                            IconButton(onClick = { filterUiAction(FilterUiAction.OpenFilterSheet) }) {
+                                Icon(Icons.Outlined.FilterAlt, contentDescription = "Open Filters")
+                            }
                         }
 
-                        is AccountEntryUiState.Success -> {
-                            SearchResultContent(
-                                uiState = entriesUiState,
-                                onUiAction = uiAction,
-                            )
+                    }
+
+                    AnimatedContent(
+                        targetState = entriesUiState,
+                        label = "AnimatedContent"
+                    ) { targetState ->
+                        when (targetState) {
+                            is AccountEntryUiState.Error -> {
+                                FullScreenErrorLayout(
+                                    errorMessage = targetState.errorMessage,
+                                    onClick = { uiAction(HomeUiAction.Refresh) }
+                                )
+                            }
+
+                            AccountEntryUiState.Idle -> {}
+                            AccountEntryUiState.Loading -> {
+                                LoadingScreen()
+                            }
+
+                            is AccountEntryUiState.Success -> {
+                                SearchResultContent(
+                                    uiState = targetState,
+                                    onUiAction = uiAction,
+                                )
+                            }
                         }
                     }
                 }
             }
+
         }
 
         val targetScrimAlpha = speedDialState.uiState.scrimAlpha
@@ -286,6 +372,31 @@ internal fun HomeScreen(
                 .align(Alignment.BottomEnd)
                 .padding(bottom = 16.dp, end = 16.dp)
         )
+
+        if (filterUiState.showFilterSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { filterUiAction(FilterUiAction.DismissFilterSheet) },
+                sheetState = filterSheetState
+            ) {
+                FilterSheetContent(
+                    temporaryFilters = filterUiState.temporaryFilters,
+                    onTemporaryFiltersChanged = { updatedFilters ->
+                        filterUiAction(FilterUiAction.UpdateTemporaryFilters(updatedFilters))
+                    },
+                    onApply = {
+                        filterUiAction(FilterUiAction.ApplyFilters)
+                    },
+                    onResetAll = {
+                        // Decide if "Reset All" only resets temporary or also applies the reset
+                        // filterUiAction(FilterUiAction.ResetTemporaryFilters)
+                        // OR:
+                        filterUiAction(FilterUiAction.ApplyAndResetFilters)
+
+                    },
+                    onDismiss = { filterUiAction(FilterUiAction.DismissFilterSheet) }
+                )
+            }
+        }
     }
 }
 
@@ -305,25 +416,33 @@ private fun SearchResultContent(
     ) {
         val lazyPagingItems: LazyPagingItems<AccountEntryUiModel> = uiState.accountEntries.collectAsLazyPagingItems()
 
-        // After the initial load or a refresh, itemCount will reflect the loaded items.
-        // It's important to also consider the load states for a complete picture.
-        LaunchedEffect(lazyPagingItems.loadState) {
-            if (lazyPagingItems.loadState.refresh is LoadState.NotLoading &&
-                lazyPagingItems.itemCount == 0) {
-                // PagingData is effectively empty after the initial load/refresh
-                // Show "No items found" message or similar UI
-            }
+        var delayedRefreshState by remember {
+            mutableStateOf<LoadState>(LoadState.NotLoading(endOfPaginationReached = false))
         }
 
-        if (lazyPagingItems.loadState.refresh is LoadState.Loading) {
-            LoadingScreen()
-        } else if (lazyPagingItems.itemCount == 0) {
+        LaunchedEffect(lazyPagingItems.loadState) {
+
+            snapshotFlow { lazyPagingItems.loadState }
+                .map { it.refresh }
+                .distinctUntilChanged()
+                .filteredDelay(
+                    loadingItemPredicate = { it is LoadState.Loading },
+                    minDelayFromLoadingItem = 700L
+                )
+                .collect { processedRefreshState ->
+                    delayedRefreshState = processedRefreshState
+                }
+        }
+
+        if (lazyPagingItems.itemCount == 0) {
             Column(
                 modifier = Modifier
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
             ) {
+                Spacer(modifier = Modifier.height(defaultSpacerSize))
                 if (uiState.filters != AccountEntryFilters.None) {
                     Text("No entries found", style = MaterialTheme.typography.headlineSmall)
                 } else {
@@ -331,66 +450,88 @@ private fun SearchResultContent(
                 }
             }
         } else {
-            LazyColumn(state = listState,) {
-                items(
-                    count = lazyPagingItems.itemCount,
-                    key = lazyPagingItems.itemKey {
-                        when (it) {
-                            is AccountEntryUiModel.Item -> it.accountEntryWithDetails.entry.entryId
-                            is AccountEntryUiModel.Separator -> it.date
-                            else -> "Footer"
-                        }
-                    },
-                    contentType = lazyPagingItems.itemContentType { "accountEntry" }, // Generic content type
-                ) { index ->
-                    val item = lazyPagingItems[index]
-                    if (item != null) {
-                        when (item) {
-                            is AccountEntryUiModel.Item -> {
-                                ExpandableAccountEntryCard(
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                                    entryDetails = item.accountEntryWithDetails,
-                                    onEditRequest = {
-                                        onUiAction(HomeUiAction.OnEditEntry(item.accountEntryWithDetails.entry))
-                                    },
-                                    onDeleteRequest = {
-                                        onUiAction(HomeUiAction.OnDeleteEntry(item.accountEntryWithDetails.entry))
-                                    }
-                                )
+            Box(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(state = listState) {
+                    items(
+                        count = lazyPagingItems.itemCount,
+                        key = lazyPagingItems.itemKey {
+                            when (it) {
+                                is AccountEntryUiModel.Item -> it.accountEntryWithDetails.entry.entryId
+                                is AccountEntryUiModel.Separator -> it.date
+                                else -> "Footer"
                             }
+                        },
+                        contentType = lazyPagingItems.itemContentType { "accountEntry" }, // Generic content type
+                    ) { index ->
+                        val item = lazyPagingItems[index]
+                        if (item != null) {
+                            when (item) {
+                                is AccountEntryUiModel.Item -> {
+                                    ExpandableAccountEntryCard(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                        entryDetails = item.accountEntryWithDetails,
+                                        onEditRequest = {
+                                            onUiAction(HomeUiAction.OnEditEntry(item.accountEntryWithDetails.entry))
+                                        },
+                                        onDeleteRequest = {
+                                            onUiAction(HomeUiAction.OnDeleteEntry(item.accountEntryWithDetails.entry))
+                                        }
+                                    )
+                                }
 
-                            is AccountEntryUiModel.Separator -> {
-                                Box(
-                                    modifier = Modifier
-                                        .animateItem()
-                                        .padding(vertical = 8.dp)
-                                        .fillMaxWidth()
-                                ) {
-                                    Text(text = item.text, style = MaterialTheme.typography.labelMedium)
+                                is AccountEntryUiModel.Separator -> {
+                                    Box(
+                                        modifier = Modifier
+                                            .animateItem()
+                                            .padding(vertical = 8.dp)
+                                            .fillMaxWidth()
+                                    ) {
+                                        Text(text = item.text, style = MaterialTheme.typography.labelMedium)
+                                    }
+                                }
+
+                                is AccountEntryUiModel.Footer -> {
+
                                 }
                             }
+                        }
+                    }
 
-                            is AccountEntryUiModel.Footer -> {
-
+                    when (lazyPagingItems.loadState.append) {
+                        is LoadState.Error -> {
+                            item { ErrorRetryItem(Modifier.animateItem()) { lazyPagingItems.retry() } }
+                        }
+                        LoadState.Loading -> {
+                            item { LoadingIndicator(Modifier.animateItem()) }
+                        }
+                        is LoadState.NotLoading -> {
+                            if (lazyPagingItems.loadState.append.endOfPaginationReached) {
+                                // Also empty if pagination ended and count is 0
+                                item {
+                                    Spacer(modifier = Modifier.height(defaultSpacerSize))
+                                }
                             }
                         }
                     }
                 }
 
-
-                when (lazyPagingItems.loadState.append) {
-                    is LoadState.Error -> {
-                        item { ErrorRetryItem(Modifier.animateItem()) { lazyPagingItems.retry() } }
-                    }
-                    LoadState.Loading -> {
-                        item { LoadingIndicator(Modifier.animateItem()) }
-                    }
-                    is LoadState.NotLoading -> {
-                        if (lazyPagingItems.loadState.append.endOfPaginationReached) {
-                            // Also empty if pagination ended and count is 0
-                        }
-                    }
-                }
+//                when (val refreshState = delayedRefreshState) {
+//                    is LoadState.Loading -> {
+//                        LoadingScreen()
+//                    }
+//                    is LoadState.Error -> {
+//                        ErrorRetryItem(Modifier.align(Alignment.BottomCenter)) {
+//                            lazyPagingItems.retry()
+//                        }
+//                    }
+//
+//                    is LoadState.NotLoading -> {
+//                        if (lazyPagingItems.itemCount == 0 && !refreshState.endOfPaginationReached &&
+//                            lazyPagingItems.loadState.refresh is LoadState.NotLoading /* Ensure raw refresh is also done */) {
+//                            Text("No items yet.", modifier = Modifier.align(Alignment.Center))
+//                        }
+//                    }
+//                }
             }
         }
     }
@@ -445,7 +586,8 @@ private fun LoadingScreen(
         )
         repeat(3) { // Show 3 shimmer items for ExpandableAccountEntryCard
             Box(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
                     .height(120.dp)
                     .padding(vertical = 4.dp)
                     .shimmerBackground(
@@ -512,8 +654,17 @@ private fun HomeScreenPreview() {
             filters = AccountEntryFilters.None
         )
 
+        val temporarySheetFilters = TemporarySheetFilters(entryType = EntryType.BANK)
+
         HomeScreen(
-            entriesUiState = successState
+            entriesUiState = successState,
+            filterUiState = FilterUiState(
+                showFilterSheet = false,
+                temporaryFilters = temporarySheetFilters,
+                activeFilters = temporarySheetFilters.toAccountEntryFilters()
+            ),
+            filterUiAction = {},
+            uiAction = {}
         )
     }
 }

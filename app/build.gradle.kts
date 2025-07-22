@@ -117,6 +117,7 @@ dependencies {
     implementation(libs.bundles.camerax)
     implementation(libs.androidx.palette.ktx)
     implementation(libs.androidx.profileinstaller)
+    implementation(libs.androidx.biometric.ktx)
 
     /* Coil */
     implementation(libs.coil.kt)

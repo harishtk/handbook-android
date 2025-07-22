@@ -12,6 +12,7 @@ androidxRecyclerView = "1.4.0"
 androidxWindow = "1.4.0"
 asynclayoutinflater = "1.1.0"
 billing = "8.0.0"
+biometricKtx = "1.2.0-alpha05"
 coil = "2.7.0"
 compileSdk = "36"
 compose = "1.8.3"
@@ -93,6 +94,7 @@ android-billing-ktx = { module = "com.android.billingclient:billing-ktx", versio
 android-installreferrer = { group = "com.android.installreferrer", name = "installreferrer", version.ref = "installReferrer" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appCompat" }
 androidx-asynclayoutinflater = { group = "androidx.asynclayoutinflater", name = "asynclayoutinflater", version.ref = "asynclayoutinflater" }
+androidx-biometric-ktx = { module = "androidx.biometric:biometric-ktx", version.ref = "biometricKtx" }
 androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "fragment-ktx" }
 androidx-camera-core = { group = "androidx.camera", name = "camera-core", version.ref = "androidxCamera" }
 androidx-camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "androidxCamera" }

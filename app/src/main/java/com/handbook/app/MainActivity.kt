@@ -7,6 +7,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
@@ -37,6 +38,7 @@ import kotlinx.coroutines.withContext
 import com.handbook.app.core.domain.model.DarkThemeConfig
 import com.handbook.app.core.domain.model.ThemeBrand
 import com.handbook.app.feature.home.navigation.HOME_GRAPH_ROUTE_PATTERN
+import com.handbook.app.feature.onboard.navigation.AUTH_GRAPH_ROUTE_PATTERN
 import com.handbook.app.ui.HandbookApp
 import timber.log.Timber
 import javax.inject.Inject
@@ -52,7 +54,7 @@ private const val TAG = "MainActivity"
  */
 @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     /**
      * Lazily inject [JankStats], which is used to track jank throughout the app.
@@ -115,7 +117,7 @@ class MainActivity : ComponentActivity() {
                         }
                         is MainActivityUiState.Login -> {
                             Timber.tag(TAG).d("Start destination: login")
-                            // startGraph = AUTH_GRAPH_ROUTE_PATTERN
+                            startGraph = AUTH_GRAPH_ROUTE_PATTERN
                         }
                         is MainActivityUiState.Success -> {
                             uiState?.data?.let { userData ->
