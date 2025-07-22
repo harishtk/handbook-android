@@ -49,7 +49,7 @@ class LocalAccountsRepository @Inject constructor(
             pagingSourceFactory = {
                 accountsDao.getFilteredEntriesPagingSource(
                     categoryId = filters.categoryId,
-                    partyId = filters.partyId,
+                    partyId = filters.party?.id,
                     entryType = filters.entryType?.name,
                     transactionType = filters.transactionType?.name,
                     startDate = filters.startDate,

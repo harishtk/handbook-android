@@ -20,6 +20,8 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,12 +39,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
+import com.handbook.app.core.designsystem.LocalWindowSizeClass
 import com.handbook.app.feature.home.domain.model.AccountEntry
 import com.handbook.app.feature.home.domain.model.AccountEntryWithDetails
 import com.handbook.app.feature.home.domain.model.Category
 import com.handbook.app.feature.home.domain.model.EntryType
 import com.handbook.app.feature.home.domain.model.Party
 import com.handbook.app.feature.home.domain.model.TransactionType
+import com.handbook.app.ui.DevicePreviews
 import com.handbook.app.ui.theme.DarkGreen
 import com.handbook.app.ui.theme.DarkRed
 import com.handbook.app.ui.theme.Gray60
@@ -157,10 +161,17 @@ fun ExpandableAccountEntryCard(
                         modifier = Modifier.weight(1f)
                         // No align needed here as Row is Align.Top
                     ) {
-                        Text(
-                            text = entryDetails.entry.title,
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            val titleBuilder = StringBuilder()
+                            if (entryDetails.party != null) {
+                                titleBuilder.append(entryDetails.party.name + " - ")
+                            }
+                            titleBuilder.append(entryDetails.entry.title)
+                            Text(
+                                text = titleBuilder.toString(),
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                            )
+                        }
 
                         // Updated Category and Entry Type line
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -325,9 +336,17 @@ fun DismissBackground(dismissState: SwipeToDismissBoxState) {
 
 @Composable
 private fun DateBlock(date: LocalDate) {
+    val windowSizeClass = LocalWindowSizeClass.current
+    val dateBlockSize = when (windowSizeClass.widthSizeClass) {
+         WindowWidthSizeClass.Compact -> 56.dp
+         WindowWidthSizeClass.Medium -> 64.dp
+         WindowWidthSizeClass.Expanded -> 72.dp
+         else -> 56.dp
+     }
+
     Card(
         modifier = Modifier
-            .size(56.dp),
+            .size(dateBlockSize),
         shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -508,6 +527,7 @@ private fun ExpandedDetailsView(
 }
 
 @Preview(showBackground = true)
+@DevicePreviews
 @Composable
 fun ExpandableAccountEntryCardPreview() {
     // Assuming HandbookTheme is your app's theme

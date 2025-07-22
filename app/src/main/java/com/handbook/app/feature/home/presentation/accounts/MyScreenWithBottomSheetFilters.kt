@@ -3,7 +3,19 @@
 package com.handbook.app.feature.home.presentation.accounts // Or your screen's package
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -11,9 +23,37 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.FilterAlt
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Button
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,12 +61,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.handbook.app.core.designsystem.component.expandable
 import com.handbook.app.feature.home.domain.model.AccountEntryFilters
-import com.handbook.app.feature.home.domain.model.EntryType // Your existing enum
+import com.handbook.app.feature.home.domain.model.EntryType
+import com.handbook.app.feature.home.domain.model.Party
 import com.handbook.app.feature.home.domain.model.SortOption
-import com.handbook.app.feature.home.domain.model.TransactionType // Your existing enum
+import com.handbook.app.feature.home.domain.model.TransactionType
 import com.handbook.app.ui.theme.HandbookTheme
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -54,7 +95,8 @@ fun MyScreenWithBottomSheetFilters(
                 // Logic to find and set selectedDatePresetLabel if needed
                 entryType = activeFilters.entryType,
                 transactionType = activeFilters.transactionType,
-                sortBy = activeFilters.sortBy
+                sortBy = activeFilters.sortBy,
+                party = activeFilters.party
             )
         }
     }
@@ -103,7 +145,8 @@ fun MyScreenWithBottomSheetFilters(
                         // onApplyFilters(_root_ide_package_.com.handbook.app.feature.home.domain.model.AccountEntryFilters.None.copy(sortBy = temporaryFiltersInSheet.sortBy))
                         // showFilterSheet = false
                     },
-                    onDismiss = { showFilterSheet = false }
+                    onDismiss = { showFilterSheet = false },
+                    onPartySelectRequest = { /* Handle party selection */ }
                 )
             }
         }
@@ -117,7 +160,8 @@ fun FilterSheetContent(
     onTemporaryFiltersChanged: (TemporarySheetFilters) -> Unit,
     onApply: () -> Unit,
     onResetAll: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onPartySelectRequest: (Party?) -> Unit,
 ) {
     // Date picker states
     val fromDatePickerState = rememberDatePickerState(initialSelectedDateMillis = temporaryFilters.startDate)
@@ -243,6 +287,19 @@ fun FilterSheetContent(
                 )
             }
             SheetDivider()
+
+            // --- Party Section ---
+            SheetFilterSection(
+                title = "Party",
+                onReset = { onTemporaryFiltersChanged(temporaryFilters.copy(party = null)) }
+            ) {
+                PartyDropdown(
+                    selectedParty = temporaryFilters.party,
+                    onPartySelectRequest = {
+                        onPartySelectRequest(it)
+                    }
+                )
+            }
 
             // --- Sort By Section (Example) ---
 //            SheetFilterSection(title = "Sort by", showResetButton = false) { // Sort might not need a "reset" in the same way
@@ -391,7 +448,7 @@ fun EntryTypeDropdown(
             label = { Text("Entry Type") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
-                .menuAnchor()
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true)
                 .fillMaxWidth(),
             shape = MaterialTheme.shapes.medium,
             textStyle = MaterialTheme.typography.bodyMedium // Compact text
@@ -474,6 +531,39 @@ fun TransactionTypeDropdown(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PartyDropdown(
+    selectedParty: Party?,
+    onPartySelectRequest: (Party?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val selectedLabel = selectedParty?.name ?: "Select Party"
+    Box(
+        modifier = modifier
+            .expandable(
+                expanded = true,
+                onExpandedChange = {
+                    onPartySelectRequest(selectedParty)
+                },
+                expandedDescription = "Show party picker",
+                collapsedDescription = "Hide party picker",
+                toggleDescription = "Toggle party picker"
+            )
+    ) {
+        OutlinedTextField(
+            value = selectedLabel,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Party") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = false) },
+            modifier = Modifier
+                .fillMaxWidth(),
+            shape = MaterialTheme.shapes.medium,
+            textStyle = MaterialTheme.typography.bodyMedium // Compact text
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -552,7 +642,8 @@ fun FilterSheetContent_Preview() {
                 onTemporaryFiltersChanged = { temporaryFilters = it},
                 onApply = {},
                 onResetAll = { temporaryFilters = TemporarySheetFilters() },
-                onDismiss = {}
+                onDismiss = {},
+                onPartySelectRequest = {}
             )
         }
     }

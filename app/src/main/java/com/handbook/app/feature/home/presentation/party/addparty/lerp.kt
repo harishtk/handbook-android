@@ -7,8 +7,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -145,6 +147,8 @@ fun CircularRevealFromFabScreen() {
                         y = coords.size.height / 2f
                     )
                 }
+                    .systemBarsPadding()
+                    .imePadding()
             ) {
                 Icon(
                     imageVector = if (isRevealed) Icons.Default.Close else Icons.Default.Add,

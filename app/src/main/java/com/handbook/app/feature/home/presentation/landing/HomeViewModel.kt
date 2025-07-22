@@ -10,7 +10,6 @@ import androidx.paging.cachedIn
 import androidx.paging.insertSeparators
 import androidx.paging.map
 import com.handbook.app.common.util.UiText
-import com.handbook.app.core.domain.repository.UserDataRepository
 import com.handbook.app.core.util.ErrorMessage
 import com.handbook.app.core.util.fold
 import com.handbook.app.feature.home.domain.model.AccountEntry
@@ -18,7 +17,6 @@ import com.handbook.app.feature.home.domain.model.AccountEntryFilters
 import com.handbook.app.feature.home.domain.model.AccountEntryWithDetails
 import com.handbook.app.feature.home.domain.model.SortOption
 import com.handbook.app.feature.home.domain.repository.AccountsRepository
-import com.handbook.app.feature.home.domain.repository.PostRepository
 import com.handbook.app.feature.home.presentation.accounts.TemporarySheetFilters
 import com.handbook.app.filteredDelay
 import com.handbook.app.ifDebug
@@ -54,8 +52,6 @@ import kotlin.time.Instant
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val postRepository: PostRepository,
-    private val userDataRepository: UserDataRepository,
     private val accountsRepository: AccountsRepository,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -119,9 +115,7 @@ class HomeViewModel @Inject constructor(
     init {
         accept = { uiAction -> onUiAction(uiAction) }
         acceptFilterAction = { action ->
-            viewModelScope.launch { // Launching a coroutine here if handlers are suspend or long-running
-                handleFilterUiAction(action)
-            }
+            handleFilterUiAction(action)
         }
     }
 
@@ -133,6 +127,11 @@ class HomeViewModel @Inject constructor(
             FilterUiAction.ApplyFilters -> onApplyFilters()
             FilterUiAction.ResetTemporaryFilters -> onResetAllTemporaryFilters()
             FilterUiAction.ApplyAndResetFilters -> onApplyResetFilters()
+            is FilterUiAction.OnSelectedParty -> {
+                viewModelScope.launch {
+                    onPartySelect(action.partyId)
+                }
+            }
         }
     }
 
@@ -234,6 +233,31 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private suspend fun onPartySelect(partyId: Long) {
+        if (partyId == 0L) {
+            onTemporaryFiltersChanged(
+                _filterUiState.value.temporaryFilters.copy(
+                    party = null
+                )
+            )
+        } else {
+            accountsRepository.getParty(partyId)
+                .fold(
+                    onFailure = { t ->
+                        ifDebug { Timber.e(t) }
+                        null
+                    },
+                    onSuccess = {
+                        onTemporaryFiltersChanged(
+                            _filterUiState.value.temporaryFilters.copy(
+                                party = it
+                            )
+                        )
+                    }
+                )
+        }
+    }
+
 
     // --- Helper Conversion Functions (Keep these as they are) ---
     private fun activeFiltersToActiveScreenFilters(accountFilters: AccountEntryFilters): AccountEntryFilters {
@@ -243,6 +267,7 @@ class HomeViewModel @Inject constructor(
             endDate = accountFilters.endDate,
             entryType = accountFilters.entryType,
             transactionType = accountFilters.transactionType,
+            party = accountFilters.party,
             sortBy = accountFilters.sortBy ?: SortOption.NEWEST_FIRST // Assuming AccountEntryFilters.sortBy is nullable
         )
     }
@@ -254,6 +279,7 @@ class HomeViewModel @Inject constructor(
             endDate = screenFilters.endDate,
             entryType = screenFilters.entryType,
             transactionType = screenFilters.transactionType,
+            party = screenFilters.party,
             sortBy = screenFilters.sortBy
         )
     }
@@ -341,6 +367,7 @@ sealed interface FilterUiAction {
     data object ApplyFilters : FilterUiAction
     data object ResetTemporaryFilters : FilterUiAction
     data object ApplyAndResetFilters : FilterUiAction // If "Reset All" also applies
+    data class OnSelectedParty(val partyId: Long) : FilterUiAction
 }
 
 sealed interface HomeUiEvent {

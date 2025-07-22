@@ -2,6 +2,7 @@ package com.handbook.app.feature.home.presentation.accounts
 
 import com.handbook.app.feature.home.domain.model.AccountEntryFilters
 import com.handbook.app.feature.home.domain.model.EntryType
+import com.handbook.app.feature.home.domain.model.Party
 import com.handbook.app.feature.home.domain.model.SortOption
 import com.handbook.app.feature.home.domain.model.TransactionType
 import kotlinx.datetime.DatePeriod
@@ -23,6 +24,7 @@ data class TemporarySheetFilters(
     var selectedDatePresetLabel: String? = null,
     var entryType: EntryType? = null,             // CORRECTED
     var transactionType: TransactionType? = null, // CORRECTED
+    var party: Party? = null,
     var sortBy: SortOption? = SortOption.NEWEST_FIRST
 ) {
     fun toAccountEntryFilters(): AccountEntryFilters {
@@ -31,6 +33,7 @@ data class TemporarySheetFilters(
             endDate = endDate,
             entryType = entryType,
             transactionType = transactionType,
+            party = party,
             sortBy = sortBy
         )
     }
@@ -40,6 +43,7 @@ data class TemporarySheetFilters(
         if (startDate != null || endDate != null) i++
         if (entryType != null) i++
         if (transactionType != null) i++
+        if (party != null) i++
         return i
     }
 
@@ -54,7 +58,8 @@ data class TemporarySheetFilters(
                 // For now, it won't auto-select a preset label.
                 entryType = activeFilters.entryType,
                 transactionType = activeFilters.transactionType,
-                sortBy = activeFilters.sortBy
+                sortBy = activeFilters.sortBy,
+                party = activeFilters.party,
             )
         }
     }

@@ -1,6 +1,10 @@
 package com.handbook.app.core.di
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.preferencesDataStoreFile
 import coil.ImageLoader
 import coil.decode.SvgDecoder
 import coil.decode.VideoFrameDecoder
@@ -15,6 +19,7 @@ import com.handbook.app.common.util.JsonParser
 import com.handbook.app.common.util.Util
 import com.handbook.app.core.data.repository.DefaultAuthSharedRepository
 import com.handbook.app.core.data.repository.NoopUserDataRepository
+import com.handbook.app.core.data.repository.PreferenceUserDataRepository
 import com.handbook.app.core.domain.repository.AuthSharedRepository
 import com.handbook.app.core.domain.repository.UserDataRepository
 import com.handbook.app.core.persistence.DefaultPersistentStore
@@ -64,6 +69,16 @@ object AppModule {
     fun provideAppUpdateManager(@ApplicationContext application: Context): AppUpdateManager =
         AppUpdateManagerFactory.create(application)
 
+    @Provides
+    @Singleton
+    @UserPreferences
+    fun provideUserPreferenceDataStore(@ApplicationContext application: Context): DataStore<Preferences> =
+        PreferenceDataStoreFactory.create(
+            produceFile = {
+                application.preferencesDataStoreFile("user_preferences")
+            }
+        )
+
     /**
      * Since we're displaying SVGs in the app, Coil needs an ImageLoader which supports this
      * format. During Coil's initialization it will call `applicationContext.newImageLoader()` to
@@ -100,7 +115,7 @@ interface AppBinderModule {
     @Binds
     @Singleton
     fun bindsUserDataRepository(
-        userDataRepository: NoopUserDataRepository
+        userDataRepository: PreferenceUserDataRepository
     ): UserDataRepository
 
     @Binds
@@ -121,3 +136,7 @@ annotation class ApplicationCoroutineScope
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class WebService
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class UserPreferences

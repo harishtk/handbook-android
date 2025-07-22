@@ -20,25 +20,9 @@ interface UserDataRepository {
 
     suspend fun updateUnreadNotificationCount(count: Int)
 
-    suspend fun updateUserPinCode(pinCode: String, areaName: String)
-
-    suspend fun updateProfileName(name: String)
-
-    suspend fun updateProfileThumb(imageName: String)
-
-    suspend fun updateProfileImage(imageName: String)
-
-    suspend fun updateCartCount(count: Int)
-
-    suspend fun updateVideoMuteStatus(muted: Boolean)
-
-    suspend fun setShouldUpdateProfileOnce(shouldUpdate: Boolean)
-
     suspend fun setServerUnderMaintenance(underMaintenance: Boolean)
 
     suspend fun setLastGreetedTime(timestamp: Long)
-
-    suspend fun setShowAppRating(show: Boolean)
 
     suspend fun updateOnboardStep(onboardStep: String)
 

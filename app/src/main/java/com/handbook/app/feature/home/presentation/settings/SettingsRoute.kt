@@ -4,6 +4,7 @@ package com.handbook.app.feature.home.presentation.settings
 
 import android.content.Context
 import android.content.Intent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -25,9 +26,18 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -35,7 +45,9 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -43,6 +55,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,11 +68,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -68,12 +84,17 @@ import com.handbook.app.BuildConfig
 import com.handbook.app.Constant
 import com.handbook.app.ObserverAsEvents
 import com.handbook.app.R
+import com.handbook.app.R.string
 import com.handbook.app.common.util.UiText
 import com.handbook.app.core.designsystem.HandbookIcons
 import com.handbook.app.core.designsystem.HandbookTopAppBarState
 import com.handbook.app.core.designsystem.component.HandbookSimpleTopAppBar
 import com.handbook.app.core.designsystem.component.LoadingDialog
 import com.handbook.app.core.designsystem.component.ThemePreviews
+import com.handbook.app.core.domain.model.DarkThemeConfig
+import com.handbook.app.core.domain.model.DarkThemeConfig.*
+import com.handbook.app.core.domain.model.ThemeBrand
+import com.handbook.app.core.domain.model.ThemeBrand.*
 import com.handbook.app.feature.home.presentation.util.SettingsItem
 import com.handbook.app.feature.home.presentation.util.SettingsListType
 import com.handbook.app.showToast
@@ -82,6 +103,7 @@ import com.handbook.app.ui.theme.HandbookTheme
 import com.handbook.app.ui.theme.MaterialColor
 import com.handbook.app.ui.theme.HandbookDarkGreen
 import com.handbook.app.ui.theme.HandbookGreen
+import com.handbook.app.ui.theme.supportsDynamicTheming
 import timber.log.Timber
 
 @Immutable
@@ -98,10 +120,13 @@ internal fun SettingsRoute(
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val themeSettingsUiState by viewModel.themeSettingsUiState.collectAsStateWithLifecycle()
 
     SettingsScreen(
         modifier = modifier,
         uiState = uiState,
+        themeSettingsUiState = themeSettingsUiState,
+        uiAction = viewModel.accept,
         onNavUp = onNavUp,
         onVersionNameClick = { gotoMarket(context) },
         onLogout = { viewModel.logout() },
@@ -121,6 +146,8 @@ internal fun SettingsRoute(
 private fun SettingsScreen(
     modifier: Modifier = Modifier,
     uiState: SettingsUiState = SettingsUiState.Loading,
+    themeSettingsUiState: ThemeSettingsUiState = ThemeSettingsUiState.Loading,
+    uiAction: (SettingsUiAction) -> Unit,
     onNavUp: () -> Unit = {},
     onVersionNameClick: () -> Unit = {},
     onOpenWebPage: (url: String) -> Unit = {},
@@ -132,15 +159,9 @@ private fun SettingsScreen(
     val scope = rememberCoroutineScope()
 
     var showLogoutConfirmationDialog by remember { mutableStateOf(false) }
+    var showThemeSettingsDialog by remember { mutableStateOf(false) }
 
-    val title = stringResource(R.string.label_settings)
-    val topAppBarState = remember {
-        HandbookTopAppBarState(
-            title = title,
-            showNavigationIcon = true,
-            onNavigationIconClick = onNavUp
-        )
-    }
+    val title = stringResource(string.label_settings)
 
     Scaffold(
         modifier = modifier
@@ -149,12 +170,42 @@ private fun SettingsScreen(
         snackbarHost = { SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding()) },
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            HandbookSimpleTopAppBar(state = topAppBarState)
+            TopAppBar(
+                modifier = modifier,
+                title = {
+                    Row {
+                        Text(
+                            text = "Settings",
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = onNavUp) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Default.ArrowBack,
+                            contentDescription = "Go Back",
+                            tint = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier
+                                .size(28.dp)
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showThemeSettingsDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Default.ColorLens,
+                            contentDescription = "Theme Settings",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                }
+            )
         },
         bottomBar = {
             val brush = Brush.linearGradient(colors = listOf(HandbookGreen, HandbookDarkGreen))
 
-            val appName = stringResource(R.string.app_name)
+            val appName = stringResource(string.app_name)
             val version = "v${BuildConfig.VERSION_NAME}"
 
             Column(
@@ -170,7 +221,7 @@ private fun SettingsScreen(
                 ) {
                     Text(
                         style = MaterialTheme.typography.labelSmall,
-                        text = stringResource(id = R.string.made_with_from),
+                        text = stringResource(id = string.made_with_from),
                     )
                 }
 
@@ -184,7 +235,7 @@ private fun SettingsScreen(
                         style = MaterialTheme.typography.labelSmall.copy(
                             brush = brush
                         ),
-                        text = stringResource(R.string.version_info, appName, version),
+                        text = stringResource(string.version_info, appName, version),
                     )
                 }
             }
@@ -220,7 +271,7 @@ private fun SettingsScreen(
 
                     LoadingDialog(isShowingDialog = uiState.loading,)
 
-                    val okText = stringResource(id = R.string.label_ok)
+                    val okText = stringResource(id = string.label_ok)
                     LaunchedEffect(key1 = uiState.uiErrorText, key2 = uiState.loading) {
                         if (!uiState.loading) {
                             uiState.uiErrorText?.asString(context)?.let { error ->
@@ -245,6 +296,25 @@ private fun SettingsScreen(
                 onSuccess = {
                     showLogoutConfirmationDialog = false
                     onLogout()
+                }
+            )
+        }
+
+        if (showThemeSettingsDialog) {
+            ThemeSettingsDialog(
+                themeSettingsUiState = themeSettingsUiState,
+                onDismiss = { showThemeSettingsDialog = false },
+                onChangeThemeBrand = {
+                    uiAction(SettingsUiAction.OnThemeBrandChange(it))
+                    showThemeSettingsDialog = false
+                },
+                onChangeDynamicColorPreference = {
+                    uiAction(SettingsUiAction.OnDynamicColorPreferenceChange(it))
+                    showThemeSettingsDialog = false
+                },
+                onChangeDarkThemeConfig = {
+                    uiAction(SettingsUiAction.OnDarkThemeConfigChange(it))
+                    showThemeSettingsDialog = false
                 }
             )
         }
@@ -381,6 +451,167 @@ private fun SettingsItemRow(
     }
 }
 
+
+@Composable
+fun ThemeSettingsDialog(
+    themeSettingsUiState: ThemeSettingsUiState,
+    supportDynamicColor: Boolean = supportsDynamicTheming(),
+    onDismiss: () -> Unit,
+    onChangeThemeBrand: (themeBrand: ThemeBrand) -> Unit,
+    onChangeDynamicColorPreference: (useDynamicColor: Boolean) -> Unit,
+    onChangeDarkThemeConfig: (darkThemeConfig: DarkThemeConfig) -> Unit,
+) {
+    val configuration = LocalConfiguration.current
+
+    /**
+     * usePlatformDefaultWidth = false is use as a temporary fix to allow
+     * height recalculation during recomposition. This, however, causes
+     * Dialog's to occupy full width in Compact mode. Therefore max width
+     * is configured below. This should be removed when there's fix to
+     * https://issuetracker.google.com/issues/221643630
+     */
+    AlertDialog(
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        modifier = Modifier.widthIn(max = configuration.screenWidthDp.dp - 80.dp),
+        onDismissRequest = { onDismiss() },
+        title = {
+            Text(
+                text = stringResource(string.feature_settings_title),
+                style = MaterialTheme.typography.titleLarge,
+            )
+        },
+        text = {
+            HorizontalDivider()
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                when (themeSettingsUiState) {
+                    ThemeSettingsUiState.Loading -> {
+                        Text(
+                            text = stringResource(string.feature_settings_loading),
+                            modifier = Modifier.padding(vertical = 16.dp),
+                        )
+                    }
+
+                    is ThemeSettingsUiState.Success -> {
+                        ThemeSettingsPanel(
+                            settings = themeSettingsUiState.settings,
+                            supportDynamicColor = supportDynamicColor,
+                            onChangeThemeBrand = onChangeThemeBrand,
+                            onChangeDynamicColorPreference = onChangeDynamicColorPreference,
+                            onChangeDarkThemeConfig = onChangeDarkThemeConfig,
+                        )
+                    }
+                }
+                HorizontalDivider(Modifier.padding(top = 8.dp))
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.padding(horizontal = 8.dp),
+            ) {
+                Text(
+                    text = stringResource(string.feature_settings_dismiss_dialog_button_text),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        },
+    )
+}
+
+@Composable
+private fun ColumnScope.ThemeSettingsPanel(
+    settings: ThemeSettings,
+    supportDynamicColor: Boolean,
+    onChangeThemeBrand: (themeBrand: ThemeBrand) -> Unit,
+    onChangeDynamicColorPreference: (useDynamicColor: Boolean) -> Unit,
+    onChangeDarkThemeConfig: (darkThemeConfig: DarkThemeConfig) -> Unit,
+) {
+    SettingsDialogSectionTitle(text = stringResource(string.feature_settings_theme))
+    Column(Modifier.selectableGroup()) {
+        SettingsDialogThemeChooserRow(
+            text = stringResource(string.feature_settings_brand_default),
+            selected = settings.brand == DEFAULT,
+            onClick = { onChangeThemeBrand(DEFAULT) },
+        )
+        SettingsDialogThemeChooserRow(
+            text = stringResource(string.feature_settings_brand_android),
+            selected = settings.brand == ANDROID,
+            onClick = { onChangeThemeBrand(ANDROID) },
+        )
+    }
+    AnimatedVisibility(visible = settings.brand == DEFAULT && supportDynamicColor) {
+        Column {
+            SettingsDialogSectionTitle(text = stringResource(string.feature_settings_dynamic_color_preference))
+            Column(Modifier.selectableGroup()) {
+                SettingsDialogThemeChooserRow(
+                    text = stringResource(string.feature_settings_dynamic_color_yes),
+                    selected = settings.useDynamicColor,
+                    onClick = { onChangeDynamicColorPreference(true) },
+                )
+                SettingsDialogThemeChooserRow(
+                    text = stringResource(string.feature_settings_dynamic_color_no),
+                    selected = !settings.useDynamicColor,
+                    onClick = { onChangeDynamicColorPreference(false) },
+                )
+            }
+        }
+    }
+    SettingsDialogSectionTitle(text = stringResource(string.feature_settings_dark_mode_preference))
+    Column(Modifier.selectableGroup()) {
+        SettingsDialogThemeChooserRow(
+            text = stringResource(string.feature_settings_dark_mode_config_system_default),
+            selected = settings.darkThemeConfig == FOLLOW_SYSTEM,
+            onClick = { onChangeDarkThemeConfig(FOLLOW_SYSTEM) },
+        )
+        SettingsDialogThemeChooserRow(
+            text = stringResource(string.feature_settings_dark_mode_config_light),
+            selected = settings.darkThemeConfig == LIGHT,
+            onClick = { onChangeDarkThemeConfig(LIGHT) },
+        )
+        SettingsDialogThemeChooserRow(
+            text = stringResource(string.feature_settings_dark_mode_config_dark),
+            selected = settings.darkThemeConfig == DARK,
+            onClick = { onChangeDarkThemeConfig(DARK) },
+        )
+    }
+}
+
+@Composable
+private fun SettingsDialogSectionTitle(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
+    )
+}
+
+@Composable
+fun SettingsDialogThemeChooserRow(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .selectable(
+                selected = selected,
+                role = Role.RadioButton,
+                onClick = onClick,
+            )
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(
+            selected = selected,
+            onClick = null,
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(text)
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LogoutConfirmDialog(
@@ -510,7 +741,11 @@ private fun SettingsPreview() {
                     .map { it.settingsItem },
                 false,
                 UiText.DynamicString("Something went wrong.")
-            )
+            ),
+            themeSettingsUiState = ThemeSettingsUiState.Success(
+                settings = ThemeSettings()
+            ),
+            uiAction = {}
         )
     }
 }

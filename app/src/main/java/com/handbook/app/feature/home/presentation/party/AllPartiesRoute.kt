@@ -181,6 +181,7 @@ private fun AllPartiesScreen(
                     )
                 }
                     .imePadding()
+                    .systemBarsPadding()
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add Party")
             }
@@ -388,10 +389,10 @@ private fun PartyItem(
                 text = party.name,
                 style = MaterialTheme.typography.titleMedium
             )
-            Text(
-                text = party.contactNumber,
-                style = MaterialTheme.typography.bodyMedium
-            )
+//            Text(
+//                text = party.contactNumber,
+//                style = MaterialTheme.typography.bodyMedium
+//            )
         }
     }
 }

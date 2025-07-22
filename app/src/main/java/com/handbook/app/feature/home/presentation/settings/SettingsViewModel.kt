@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.handbook.app.R
 import com.handbook.app.common.util.UiText
+import com.handbook.app.core.domain.model.DarkThemeConfig
+import com.handbook.app.core.domain.model.ThemeBrand
 import com.handbook.app.core.domain.model.UserData
 import com.handbook.app.core.domain.repository.UserDataRepository
 import com.handbook.app.core.domain.usecase.LogoutUseCase
@@ -133,6 +135,24 @@ class SettingsViewModel @Inject constructor(
             initialValue = viewModelState.value.toSettingsUiState()
         )
 
+    val themeSettingsUiState = userData
+        .map { userData ->
+            ThemeSettingsUiState.Success(
+                settings = ThemeSettings(
+                    brand = userData.themeBrand,
+                    darkThemeConfig = userData.darkThemeConfig,
+                    useDynamicColor = userData.useDynamicColor
+                )
+            )
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = ThemeSettingsUiState.Loading
+        )
+
+    val accept: (SettingsUiAction) -> Unit
+
     private val _toastText: MutableSharedFlow<UiText?> = MutableSharedFlow(0)
     val toastText = _toastText.asSharedFlow()
 
@@ -155,6 +175,26 @@ class SettingsViewModel @Inject constructor(
                 }
             }
             .launchIn(viewModelScope)
+
+        accept = { action ->
+            when (action) {
+                is SettingsUiAction.OnDarkThemeConfigChange -> {
+                    viewModelScope.launch {
+                        userDataRepository.setDarkThemeConfig(action.darkThemeConfig)
+                    }
+                }
+                is SettingsUiAction.OnDynamicColorPreferenceChange -> {
+                    viewModelScope.launch {
+                        userDataRepository.setDynamicColorPreference(action.useDynamicColor)
+                    }
+                }
+                is SettingsUiAction.OnThemeBrandChange -> {
+                    viewModelScope.launch {
+                        userDataRepository.setThemeBrand(action.brand)
+                    }
+                }
+            }
+        }
     }
 
     val settingsProfileState: StateFlow<SettingsProfileState> = userData
@@ -233,6 +273,12 @@ class SettingsViewModel @Inject constructor(
     }
 }
 
+data class ThemeSettings(
+    val brand: ThemeBrand = ThemeBrand.default(),
+    val darkThemeConfig: DarkThemeConfig = DarkThemeConfig.default(),
+    val useDynamicColor: Boolean = false,
+)
+
 private data class ViewModelState(
     val loading: Boolean = false,
     val uiErrorText: UiText? = null,
@@ -266,6 +312,14 @@ interface SettingsUiState {
     }
 }
 
+sealed interface ThemeSettingsUiState {
+    data object Loading : ThemeSettingsUiState
+
+    data class Success(
+        val settings: ThemeSettings,
+    ) : ThemeSettingsUiState
+}
+
 sealed interface SettingsProfileState {
     data object Loading : SettingsProfileState
 
@@ -274,4 +328,10 @@ sealed interface SettingsProfileState {
     data class ProfileData(
         val userData: UserData,
     ) : SettingsProfileState
+}
+
+sealed interface SettingsUiAction {
+    data class OnThemeBrandChange(val brand: ThemeBrand) : SettingsUiAction
+    data class OnDarkThemeConfigChange(val darkThemeConfig: DarkThemeConfig) : SettingsUiAction
+    data class OnDynamicColorPreferenceChange(val useDynamicColor: Boolean) : SettingsUiAction
 }

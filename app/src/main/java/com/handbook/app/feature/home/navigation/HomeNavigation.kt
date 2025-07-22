@@ -31,6 +31,7 @@ import com.handbook.app.feature.home.presentation.profile.ProfileRoute
 import com.handbook.app.feature.home.presentation.search.SearchRoute
 import com.handbook.app.feature.home.presentation.settings.SettingsRoute
 import com.handbook.app.feature.home.presentation.webview.WebPageRoute
+import com.handbook.app.hiltActivityViewModel
 import com.handbook.app.sharedViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 
@@ -176,8 +177,9 @@ fun NavGraphBuilder.homeScreen(
             navArgument(FIRST_LOG_IN) { defaultValue = "0" }
         ),
     ) {
-        val sharedViewModel = it.sharedViewModel<SharedViewModel>(navController)
+        val sharedViewModel: SharedViewModel = hiltActivityViewModel<SharedViewModel>()
         HomeRoute(
+            navController = navController,
             sharedViewModel = sharedViewModel,
             onAddEntryRequest = { entryId, transactionType ->
                 navController.navigateToAddAccountEntry(
@@ -187,6 +189,9 @@ fun NavGraphBuilder.homeScreen(
             },
             onNavigateToNotifications = {
                 navController.navigateToNotifications()
+            },
+            onSelectPartyRequest = { partyId ->
+                navController.navigateToAllParties(partyId, true)
             }
         )
     }
@@ -245,8 +250,9 @@ fun NavGraphBuilder.homeGraph(
             route = homeNavigationRoute,
             /* TODO: add deep links and other args here */
         ) {
-            val sharedViewModel = it.sharedViewModel<SharedViewModel>(navController)
+            val sharedViewModel: SharedViewModel = hiltActivityViewModel<SharedViewModel>()
             HomeRoute(
+                navController = navController,
                 sharedViewModel = sharedViewModel,
                 onAddEntryRequest = { entryId, transactionType ->
                     navController.navigateToAddAccountEntry(
@@ -257,6 +263,9 @@ fun NavGraphBuilder.homeGraph(
                 onNavigateToNotifications = {
                     // navController.navigateToNotifications()
                     navController.navigateToAllParties()
+                },
+                onSelectPartyRequest = { partyId ->
+                    navController.navigateToAllParties(partyId, true)
                 }
             )
         }

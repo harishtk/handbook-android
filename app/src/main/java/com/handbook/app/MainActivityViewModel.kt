@@ -22,7 +22,10 @@ class MainActivityViewModel @Inject constructor(
 
     private val userData = userDataRepository.userData
         .distinctUntilChanged { old, new ->
-            old.userId == new.userId
+            old.userId == new.userId &&
+                    old.darkThemeConfig == new.darkThemeConfig &&
+                    old.useDynamicColor == new.useDynamicColor &&
+                    old.themeBrand == new.themeBrand
         }
 
     val uiState: StateFlow<MainActivityUiState> = combine(

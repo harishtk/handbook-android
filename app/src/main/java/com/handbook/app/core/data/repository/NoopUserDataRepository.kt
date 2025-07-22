@@ -17,11 +17,7 @@ class NoopUserDataRepository @Inject constructor(): UserDataRepository {
         get() = flowOf(
             UserData(
                 userId = "dummy-id",
-                username = "",
-                profileName = "",
-                profileImage = "",
                 unreadNotificationCount = 0,
-                shouldUpdateProfileOnce = false,
             )
         )
 
@@ -36,43 +32,11 @@ class NoopUserDataRepository @Inject constructor(): UserDataRepository {
         // TODO("Not yet implemented")
     }
 
-    override suspend fun updateUserPinCode(pinCode: String, areaName: String) {
-        // TODO("Not yet implemented")
-    }
-
-    override suspend fun updateProfileName(name: String) {
-        // TODO("Not yet implemented")
-    }
-
-    override suspend fun updateProfileThumb(imageName: String) {
-        // TODO("Not yet implemented")
-    }
-
-    override suspend fun updateProfileImage(imageName: String) {
-        // TODO("Not yet implemented")
-    }
-
-    override suspend fun updateCartCount(count: Int) {
-        // TODO("Not yet implemented")
-    }
-
-    override suspend fun updateVideoMuteStatus(muted: Boolean) {
-        // TODO("Not yet implemented")
-    }
-
-    override suspend fun setShouldUpdateProfileOnce(shouldUpdate: Boolean) {
-        // TODO("Not yet implemented")
-    }
-
     override suspend fun setServerUnderMaintenance(underMaintenance: Boolean) {
         // TODO("Not yet implemented")
     }
 
     override suspend fun setLastGreetedTime(timestamp: Long) {
-        // TODO("Not yet implemented")
-    }
-
-    override suspend fun setShowAppRating(show: Boolean) {
         // TODO("Not yet implemented")
     }
 

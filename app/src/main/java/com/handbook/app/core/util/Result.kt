@@ -1,6 +1,7 @@
 package com.handbook.app.core.util
 
 import kotlinx.coroutines.flow.*
+import java.util.Optional
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
@@ -55,5 +56,13 @@ inline fun <R> Result<R>.fold(
         is Result.Success -> onSuccess(data)
         is Result.Error -> onFailure(exception)
         Result.Loading -> {}
+    }
+}
+
+inline fun <T, R> Result<T>.map(transform: (value: T) -> R): Result<R> {
+    return when (this) {
+        is Result.Success -> Result.Success(transform(data))
+        is Result.Error -> this
+        Result.Loading -> Result.Loading
     }
 }

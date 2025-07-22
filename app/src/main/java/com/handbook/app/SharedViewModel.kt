@@ -121,6 +121,14 @@ class SharedViewModel @Inject constructor(
         Timber.d("Reselect: sending $id..")
         viewModelScope.launch { _bottomBarReSelectSignal.emit(id) }
     }
+
+    private val _navigationDrawerSignal = MutableStateFlow(false)
+    val navigationDrawerSignal = _navigationDrawerSignal.asStateFlow()
+
+    fun setNavigationDrawerSignal(open: Boolean) {
+        Timber.d("Drawer: sending ${navigationDrawerSignal.value}..")
+        _navigationDrawerSignal.update { state -> !state }
+    }
 }
 
 val bottomBarDestinations: List<String> =

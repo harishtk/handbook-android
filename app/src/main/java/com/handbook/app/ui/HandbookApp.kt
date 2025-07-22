@@ -39,6 +39,7 @@ import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSiz
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -156,15 +157,27 @@ fun HandbookApp(
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
 
-                var drawerWidth by remember { mutableFloatStateOf(drawerState.offset.value) }
-                Timber.d("NavigationDrawer: offset=${drawerState.offset}")
+                var drawerWidth by remember { mutableFloatStateOf(drawerState.currentOffset) }
+                Timber.d("NavigationDrawer: offset=${drawerState.currentOffset}")
 
                 // As soon the user move the drawer, the content must move in sync.
                 // So here we're creating a derived state of the drawer state
                 // to update the content position.
                 val contentOffset = remember {
                     derivedStateOf {
-                        drawerState.offset.value
+                        drawerState.currentOffset
+                    }
+                }
+                val openNavigationDrawerSignal by sharedViewModel.navigationDrawerSignal.collectAsStateWithLifecycle()
+
+                LaunchedEffect(openNavigationDrawerSignal) {
+                    if (openNavigationDrawerSignal) {
+                        scope.launch {
+                            drawerState.apply {
+                                if (isClosed) open() else close()
+                            }
+                            sharedViewModel.setNavigationDrawerSignal(false)
+                        }
                     }
                 }
 
@@ -258,44 +271,44 @@ fun HandbookApp(
 
                             Column(Modifier.fillMaxSize()) {
                                 // Show the top app bar on top level destinations.
-                                val destination = appState.currentTopLevelDestination
-                                if (destination != null) {
-                                    HandbookTopAppBar(
-                                        modifier = Modifier
-                                            .shadow(4.dp),
-                                        title = @Composable {
-                                            Text(
-                                                text = "Timeline",
-                                                style = MaterialTheme.typography.titleLarge
-                                                    .copy(fontWeight = FontWeight.W700)
-                                            )
-                                        },
-                                        navigationIcon = {
-                                            IconButton(onClick = {
-                                                scope.launch {
-                                                    drawerState.apply {
-                                                        if (isClosed) open() else close()
-                                                    }
-                                                }
-                                            }) {
-                                                Icon(
-                                                    painter = painterResource(id = HandbookIcons.Id_Breadcrumbs),
-                                                    contentDescription = "Open Drawer",
-                                                    tint = MaterialTheme.colorScheme.onSurface,
-                                                )
-                                            }
-                                        },
-                                        actions = {
-                                            IconButton(onClick = {}) {
-                                                Icon(
-                                                    imageVector = HandbookIcons.MoreVert,
-                                                    contentDescription = "Options",
-                                                    tint = MaterialTheme.colorScheme.onSurface,
-                                                )
-                                            }
-                                        }
-                                    )
-                                }
+//                                val destination = appState.currentTopLevelDestination
+//                                if (destination != null) {
+//                                    HandbookTopAppBar(
+//                                        modifier = Modifier
+//                                            .shadow(4.dp),
+//                                        title = @Composable {
+//                                            Text(
+//                                                text = "Timeline",
+//                                                style = MaterialTheme.typography.titleLarge
+//                                                    .copy(fontWeight = FontWeight.W700)
+//                                            )
+//                                        },
+//                                        navigationIcon = {
+//                                            IconButton(onClick = {
+//                                                scope.launch {
+//                                                    drawerState.apply {
+//                                                        if (isClosed) open() else close()
+//                                                    }
+//                                                }
+//                                            }) {
+//                                                Icon(
+//                                                    painter = painterResource(id = HandbookIcons.Id_Breadcrumbs),
+//                                                    contentDescription = "Open Drawer",
+//                                                    tint = MaterialTheme.colorScheme.onSurface,
+//                                                )
+//                                            }
+//                                        },
+//                                        actions = {
+//                                            IconButton(onClick = {}) {
+//                                                Icon(
+//                                                    imageVector = HandbookIcons.MoreVert,
+//                                                    contentDescription = "Options",
+//                                                    tint = MaterialTheme.colorScheme.onSurface,
+//                                                )
+//                                            }
+//                                        }
+//                                    )
+//                                }
 
                                 HandbookNavHost(
                                     modifier = Modifier.weight(1F),

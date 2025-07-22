@@ -180,6 +180,7 @@ private fun AllCategoriesScreen(
                     )
                 }
                     .imePadding()
+                    .systemBarsPadding()
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add Category")
             }

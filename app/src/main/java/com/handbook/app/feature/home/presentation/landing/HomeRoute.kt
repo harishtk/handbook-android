@@ -9,6 +9,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -42,8 +44,6 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ElevatedAssistChip
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -52,27 +52,33 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.Surface
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.view.isVisible
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavHostController
 import androidx.paging.LoadState
 import androidx.paging.LoadStates
 import androidx.paging.PagingData
@@ -84,13 +90,16 @@ import androidx.paging.insertSeparators
 import androidx.paging.map
 import com.handbook.app.ObserverAsEvents
 import com.handbook.app.SharedViewModel
+import com.handbook.app.core.designsystem.HandbookIcons
 import com.handbook.app.core.designsystem.component.CustomConfirmDialog
+import com.handbook.app.core.designsystem.component.HandbookTopAppBar
 import com.handbook.app.core.designsystem.shimmerBackground
 import com.handbook.app.feature.home.domain.model.AccountEntry
 import com.handbook.app.feature.home.domain.model.AccountEntryFilters
 import com.handbook.app.feature.home.domain.model.AccountEntryWithDetails
 import com.handbook.app.feature.home.domain.model.Category
 import com.handbook.app.feature.home.domain.model.EntryType
+import com.handbook.app.feature.home.domain.model.Party
 import com.handbook.app.feature.home.domain.model.TransactionType
 import com.handbook.app.feature.home.domain.model.UserSummary
 import com.handbook.app.feature.home.presentation.accounts.FilterSheetContent
@@ -107,8 +116,6 @@ import com.handbook.app.ui.theme.DarkGreen
 import com.handbook.app.ui.theme.DarkRed
 import com.handbook.app.ui.theme.HandbookTheme
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -123,10 +130,12 @@ import kotlin.time.ExperimentalTime
 @Composable
 internal fun HomeRoute(
     modifier: Modifier = Modifier,
+    navController: NavHostController,
     sharedViewModel: SharedViewModel,
     viewModel: HomeViewModel = hiltViewModel(),
     onAddEntryRequest: (Long, TransactionType) -> Unit,
     onNavigateToNotifications: () -> Unit,
+    onSelectPartyRequest: (selectedPartyId: Long) -> Unit = {}
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -144,7 +153,11 @@ internal fun HomeRoute(
         snackbarHostState = snackbarHostState,
         uiAction = viewModel.accept,
         onFabClick = { onAddEntryRequest(0, it) },
-        onNavigateToNotifications = onNavigateToNotifications
+        onNavigateToNotifications = onNavigateToNotifications,
+        onSelectPartyRequest = onSelectPartyRequest,
+        onNavigationIconClick = {
+            sharedViewModel.setNavigationDrawerSignal(true)
+        }
     )
 
     // FIXME: View model is recreating everytime
@@ -193,6 +206,27 @@ internal fun HomeRoute(
             }
         }
     }
+
+    val currentNavController by rememberUpdatedState(navController)
+    DisposableEffect(currentNavController) {
+        val navBackStackEntry = currentNavController.currentBackStackEntry
+        val savedStateHandle = navBackStackEntry?.savedStateHandle
+
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) { // Or another appropriate lifecycle event
+                // Extract selected Party Id
+                savedStateHandle?.get<Long?>("partyId")?.let { result ->
+                    viewModel.acceptFilterAction(FilterUiAction.OnSelectedParty(result))
+                    savedStateHandle.remove<Long>("partyId")
+                }
+            }
+        }
+        navBackStackEntry?.lifecycle?.addObserver(observer)
+
+        onDispose {
+            navBackStackEntry?.lifecycle?.removeObserver(observer)
+        }
+    }
 }
 
 @Composable
@@ -205,7 +239,10 @@ internal fun HomeScreen(
     uiAction: (HomeUiAction) -> Unit = {},
     onFabClick: (TransactionType) -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
+    onSelectPartyRequest: (selectedPartyId: Long) -> Unit = {},
+    onNavigationIconClick: () -> Unit,
 ) {
+    val scope = rememberCoroutineScope()
     // This code should be called when UI is ready for use and relates to Time To Full Display.
     ReportDrawnWhen { true /* Add custom conditions here. eg. !isSyncing */ }
 
@@ -237,6 +274,37 @@ internal fun HomeScreen(
             modifier = modifier
                 .fillMaxSize(),
             //.nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = {
+                HandbookTopAppBar(
+                    modifier = Modifier
+                        .shadow(4.dp),
+                    title = @Composable {
+                        Text(
+                            text = "Timeline",
+                            style = MaterialTheme.typography.titleLarge
+                                .copy(fontWeight = FontWeight.W700)
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigationIconClick) {
+                            Icon(
+                                painter = painterResource(id = HandbookIcons.Id_Breadcrumbs),
+                                contentDescription = "Open Drawer",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = {}) {
+                            Icon(
+                                imageVector = HandbookIcons.MoreVert,
+                                contentDescription = "Options",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    }
+                )
+            },
             snackbarHost = { SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding()) },
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             containerColor = Color.Transparent
@@ -255,7 +323,8 @@ internal fun HomeScreen(
                     verticalArrangement = Arrangement.Top,
                 ) {
                     Row(
-                        Modifier.fillMaxWidth()
+                        Modifier
+                            .fillMaxWidth()
                             .padding(end = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
                         verticalAlignment = Alignment.CenterVertically
@@ -283,7 +352,8 @@ internal fun HomeScreen(
                             badge = {
                                 if (activeFilterCount > 0) {
                                     Badge(
-                                        modifier = Modifier.padding(0.dp) // Surface border
+                                        modifier = Modifier
+                                            .padding(0.dp) // Surface border
                                             .offset(x = (-4).dp, y = 4.dp)
                                     ) {
                                         Text(
@@ -303,6 +373,11 @@ internal fun HomeScreen(
 
                     AnimatedContent(
                         targetState = entriesUiState,
+                        transitionSpec = {
+                            (fadeIn(animationSpec = tween(220, delayMillis = 90)) +
+                                    scaleIn(initialScale = 0.98f, animationSpec = tween(220, delayMillis = 90)))
+                                .togetherWith(fadeOut(animationSpec = tween(90)))
+                        },
                         label = "AnimatedContent"
                     ) { targetState ->
                         when (targetState) {
@@ -393,7 +468,10 @@ internal fun HomeScreen(
                         filterUiAction(FilterUiAction.ApplyAndResetFilters)
 
                     },
-                    onDismiss = { filterUiAction(FilterUiAction.DismissFilterSheet) }
+                    onDismiss = { filterUiAction(FilterUiAction.DismissFilterSheet) },
+                    onPartySelectRequest = { party: Party? ->
+                        onSelectPartyRequest(party?.id ?: 0L)
+                    }
                 )
             }
         }
@@ -664,7 +742,8 @@ private fun HomeScreenPreview() {
                 activeFilters = temporarySheetFilters.toAccountEntryFilters()
             ),
             filterUiAction = {},
-            uiAction = {}
+            uiAction = {},
+            onNavigationIconClick = {}
         )
     }
 }
