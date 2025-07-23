@@ -76,8 +76,9 @@ object HandbookIcons {
     val Id_Search_Outline = R.drawable.baseline_search_24
     val Id_Groups_Outline = R.drawable.outline_groups_24
     val Id_Category_Outline = R.drawable.outline_category_24
-    val Id_Bank = R.drawable.ic_bank
+    val Id_Bank = R.drawable.baseline_account_balance_24
     val Id_Cash = R.drawable.ic_cash
+    val Id_Backup = R.drawable.outline_backup_24
 
     val Id_Home_Alt = R.drawable.ic_home_alt
     val Id_Website_Outline = R.drawable.ic_website

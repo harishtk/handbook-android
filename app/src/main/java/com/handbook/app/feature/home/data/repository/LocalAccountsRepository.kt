@@ -9,10 +9,13 @@ import com.handbook.app.core.di.Dispatcher
 import com.handbook.app.core.util.Result
 import com.handbook.app.feature.home.data.source.local.dao.AccountEntryDao
 import com.handbook.app.feature.home.data.source.local.dao.CategoryDao
+import com.handbook.app.feature.home.data.source.local.dao.BankDao
 import com.handbook.app.feature.home.data.source.local.dao.PartyDao
+import com.handbook.app.feature.home.data.source.local.entity.BankEntity
 import com.handbook.app.feature.home.data.source.local.entity.CategoryEntity
 import com.handbook.app.feature.home.data.source.local.entity.PartyEntity
 import com.handbook.app.feature.home.data.source.local.entity.asEntity
+import com.handbook.app.feature.home.data.source.local.entity.toBank
 import com.handbook.app.feature.home.data.source.local.entity.toCategory
 import com.handbook.app.feature.home.data.source.local.entity.toParty
 import com.handbook.app.feature.home.data.source.local.model.AccountEntryWithDetailsEntity
@@ -20,6 +23,7 @@ import com.handbook.app.feature.home.data.source.local.model.toAccountEntryWithD
 import com.handbook.app.feature.home.domain.model.AccountEntry
 import com.handbook.app.feature.home.domain.model.AccountEntryFilters
 import com.handbook.app.feature.home.domain.model.AccountEntryWithDetails
+import com.handbook.app.feature.home.domain.model.Bank
 import com.handbook.app.feature.home.domain.model.Category
 import com.handbook.app.feature.home.domain.model.Party
 import com.handbook.app.feature.home.domain.repository.AccountsRepository
@@ -36,6 +40,7 @@ class LocalAccountsRepository @Inject constructor(
     private val accountsDao: AccountEntryDao,
     private val categoriesDao: CategoryDao,
     private val partiesDao: PartyDao,
+    private val banksDao: BankDao,
     @Dispatcher(AiaDispatchers.Io)
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : AccountsRepository {
@@ -263,6 +268,78 @@ class LocalAccountsRepository @Inject constructor(
         return withContext(dispatcher) {
             try {
                 partiesDao.delete(partyId)
+                Result.Success(Unit)
+            } catch (e: Exception) {
+                Result.Error(e)
+            }
+        }
+    }
+
+    override fun getBanksPagingSource(query: String): Flow<PagingData<Bank>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = 20,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = { banksDao.banksPagingSource(query) }
+        ).flow
+            .map { pagingData -> pagingData.map(BankEntity::toBank) }
+            .flowOn(dispatcher)
+    }
+
+    override fun getBanksStream(): Flow<List<Bank>> {
+        return banksDao.banksStream()
+            .map { banks -> banks.map(BankEntity::toBank) }
+            .flowOn(dispatcher)
+    }
+
+    override fun getBankStream(id: Long): Flow<Bank?> {
+        return banksDao.observeBank(id)
+            .mapNotNull { it?.toBank() }
+            .flowOn(dispatcher)
+    }
+
+    override suspend fun getBank(bankId: Long): Result<Bank> {
+        return withContext(dispatcher) {
+            try {
+                val bank = banksDao.getBank(bankId)?.toBank()
+                if (bank != null) {
+                    Result.Success(bank)
+                } else {
+                    Result.Error(Exception("Bank not found"))
+                }
+            } catch (e: Exception) {
+                Result.Error(e)
+            }
+        }
+    }
+
+    override suspend fun addBank(bank: Bank): Result<Long> {
+        return withContext(dispatcher) {
+            try {
+                banksDao.insert(bank.asEntity())
+                Result.Success(0)
+            } catch (e: Exception) {
+                Result.Error(e)
+            }
+        }
+    }
+
+    override suspend fun updateBank(bank: Bank): Result<Bank> {
+        return withContext(dispatcher) {
+            try {
+                banksDao.upsertAll(listOf(bank).map(Bank::asEntity))
+                Result.Success(bank)
+            } catch (e: Exception) {
+                Result.Error(e)
+            }
+        }
+    }
+
+    override suspend fun deleteBank(bankId: Long): Result<Unit> {
+        return withContext(dispatcher) {
+            try {
+                banksDao.delete(bankId)
                 Result.Success(Unit)
             } catch (e: Exception) {
                 Result.Error(e)

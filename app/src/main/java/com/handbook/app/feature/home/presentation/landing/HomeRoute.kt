@@ -122,6 +122,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
@@ -276,13 +277,12 @@ internal fun HomeScreen(
             //.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
                 HandbookTopAppBar(
-                    modifier = Modifier
-                        .shadow(4.dp),
+                    modifier = Modifier,
                     title = @Composable {
                         Text(
                             text = "Timeline",
                             style = MaterialTheme.typography.titleLarge
-                                .copy(fontWeight = FontWeight.W700)
+                                .copy(fontWeight = FontWeight.W400)
                         )
                     },
                     navigationIcon = {
@@ -684,6 +684,7 @@ private fun HomeScreenPreview() {
         disableDynamicTheming = true,
     ) {
         val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+        val tomorrowMillis = today.date.plus(1, DateTimeUnit.DAY).atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds()
 
         val emptySourceLoadStatesComplete = LoadStates(
             refresh = LoadState.NotLoading(endOfPaginationReached = true), // Refresh is complete, and the list is empty, so end of pagination
@@ -697,9 +698,9 @@ private fun HomeScreenPreview() {
                 title = "Utility Bill Payment",
                 amount = 300.0,
                 transactionType = TransactionType.EXPENSE,
-                createdAt = today.date.plus(1, DateTimeUnit.DAY).toEpochDays(),
-                updatedAt = today.date.plus(1, DateTimeUnit.DAY).toEpochDays(),
-                transactionDate = today.date.plus(1, DateTimeUnit.DAY).toEpochDays(),
+                createdAt = tomorrowMillis,
+                updatedAt = tomorrowMillis,
+                transactionDate = tomorrowMillis,
                 partyId = null, // No party
                 categoryId = 2,
                 entryType = EntryType.BANK,

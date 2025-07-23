@@ -4,10 +4,12 @@ import androidx.room.Embedded
 import androidx.room.Relation
 import com.handbook.app.feature.home.data.source.local.entity.AccountEntryEntity
 import com.handbook.app.feature.home.data.source.local.entity.AttachmentEntity
+import com.handbook.app.feature.home.data.source.local.entity.BankEntity
 import com.handbook.app.feature.home.data.source.local.entity.CategoryEntity
 import com.handbook.app.feature.home.data.source.local.entity.PartyEntity
 import com.handbook.app.feature.home.data.source.local.entity.toAccountEntry
 import com.handbook.app.feature.home.data.source.local.entity.toAttachment
+import com.handbook.app.feature.home.data.source.local.entity.toBank
 import com.handbook.app.feature.home.data.source.local.entity.toCategory
 import com.handbook.app.feature.home.data.source.local.entity.toParty
 import com.handbook.app.feature.home.domain.model.AccountEntryWithDetails
@@ -29,6 +31,12 @@ data class AccountEntryWithDetailsEntity(
     val party: PartyEntity? = null, // Party is optional
 
     @Relation(
+        parentColumn = "fk_bank_id",
+        entityColumn = "bank_id"
+    )
+    val bankDetail: BankEntity? = null, // Bank is optional
+
+    @Relation(
         parentColumn = "entry_id", // from AccountEntryEntity
         entityColumn = "fk_entry_id"  // from AttachmentEntity
     )
@@ -40,6 +48,7 @@ fun AccountEntryWithDetailsEntity.toAccountEntryWithDetails(): AccountEntryWithD
         entry = entry.toAccountEntry(),
         category = category.toCategory(),
         party = party?.toParty(),
+        bank = bankDetail?.toBank(),
         attachments = attachments.map(AttachmentEntity::toAttachment)
     )
 

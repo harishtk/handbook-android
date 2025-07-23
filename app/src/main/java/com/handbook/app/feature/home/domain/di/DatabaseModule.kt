@@ -49,5 +49,10 @@ interface DatabaseModule {
         fun provideAttachmentDao(
             database: AccountsDatabase
         ) = database.attachmentDao()
+
+        @Provides
+        fun provideBankDao(
+            database: AccountsDatabase
+        ) = database.bankDao()
     }
 }

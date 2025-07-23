@@ -10,6 +10,7 @@ import com.handbook.app.common.util.loadstate.LoadType
 import com.handbook.app.core.util.ErrorMessage
 import com.handbook.app.core.util.fold
 import com.handbook.app.feature.home.domain.model.AccountEntry
+import com.handbook.app.feature.home.domain.model.Bank
 import com.handbook.app.feature.home.domain.model.Category
 import com.handbook.app.feature.home.domain.model.EntryType
 import com.handbook.app.feature.home.domain.model.Party
@@ -60,6 +61,7 @@ class AddAccountViewModel @Inject constructor(
     val transactionType = savedStateHandle.getStateFlow("transactionType", "")
     val categoryId = savedStateHandle.getStateFlow<Long>("categoryId", 0L)
     val partyId = savedStateHandle.getStateFlow<Long>("partyId", 0L)
+    val bankId = savedStateHandle.getStateFlow<Long>("bankId", 0L)
 
     private val _uiEvent = MutableSharedFlow<AddAccountUiEvent>()
     val uiEvent = _uiEvent.asSharedFlow()
@@ -166,6 +168,37 @@ class AddAccountViewModel @Inject constructor(
                 }
             }
         }.launchIn(viewModelScope)
+
+        bankId.mapLatest { bid ->
+            if (bid != 0L) {
+                accountsRepository.getBank(bid)
+            } else {
+                null
+            }
+        }.onEach { result ->
+            if (result != null) {
+                result.fold(
+                    onFailure = { exception ->
+                    },
+                    onSuccess = { bank ->
+                        Timber.d("Selected: bank=$bank")
+                        viewModelState.update { state ->
+                            state.copy(
+                                bank = bank
+                            )
+                        }
+                    }
+                )
+            } else {
+                viewModelState.update { state ->
+                    state.copy(
+                        bankId = null,
+                        bank = null
+                    )
+                }
+            }
+        }
+            .launchIn(viewModelScope)
     }
 
     private fun onUiAction(action: AddAccountUiAction) {
@@ -250,6 +283,14 @@ class AddAccountViewModel @Inject constructor(
 
             is AddAccountUiAction.OnPartySelectRequest -> {
                 sendEvent(AddAccountUiEvent.NavigateToPartySelection(action.partyId ?: 0L))
+            }
+
+            is AddAccountUiAction.OnBankToggle -> {
+                savedStateHandle["bankId"] = action.bankId
+            }
+
+            is AddAccountUiAction.OnBankSelectRequest -> {
+                sendEvent(AddAccountUiEvent.NavigateToBankSelection(action.bankId ?: 0L))
             }
         }
     }
@@ -380,6 +421,8 @@ private data class ViewModelState(
     val transactionDate: Long = System.currentTimeMillis(),
     val partyId: Long? = null,
     val party: Party? = null,
+    val bankId: Long? = null,
+    val bank: Bank? = null,
     val categoryId: Long = 0L,
     val category: Category? = null,
 
@@ -403,6 +446,7 @@ private data class ViewModelState(
                 transactionDate = transactionDate,
                 party = party,
                 category = category,
+                bank = bank,
                 errorMessage = errorMessage,
             )
         }
@@ -419,6 +463,7 @@ sealed interface AddAccountUiState {
         val transactionDate: Long = 0L,
         val party: Party? = null,
         val category: Category? = null,
+        val bank: Bank? = null,
         val errorMessage: ErrorMessage? = null,
     ) : AddAccountUiState
 
@@ -434,6 +479,7 @@ sealed interface AddAccountUiAction {
     data class OnTransactionTypeToggle(val transactionType: TransactionType) : AddAccountUiAction
     data class OnCategoryToggle(val categoryId: Long) : AddAccountUiAction
     data class OnPartyToggle(val partyId: Long?) : AddAccountUiAction
+    data class OnBankToggle(val bankId: Long?) : AddAccountUiAction
     data class Submit(
         val name: String,
         val description: String,
@@ -448,6 +494,7 @@ sealed interface AddAccountUiAction {
     data object DeleteAccountEntry : AddAccountUiAction
     data class OnCategorySelectRequest(val categoryId: Long) : AddAccountUiAction
     data class OnPartySelectRequest(val partyId: Long?) : AddAccountUiAction
+    data class OnBankSelectRequest(val bankId: Long?) : AddAccountUiAction
 }
 
 sealed interface AddAccountUiEvent {
@@ -455,4 +502,5 @@ sealed interface AddAccountUiEvent {
     data object OnNavUp : AddAccountUiEvent
     data class NavigateToCategorySelection(val categoryId: Long) : AddAccountUiEvent
     data class NavigateToPartySelection(val partyId: Long) : AddAccountUiEvent
+    data class NavigateToBankSelection(val bankId: Long) : AddAccountUiEvent
 }

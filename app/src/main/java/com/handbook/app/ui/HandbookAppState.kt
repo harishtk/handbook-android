@@ -21,8 +21,10 @@ import kotlinx.coroutines.flow.stateIn
 import com.handbook.app.bottomBarDestinations
 import com.handbook.app.core.util.NetworkMonitor
 import com.handbook.app.feature.home.navigation.homeNavigationRoute
+import com.handbook.app.feature.home.navigation.navigateToAllBanks
 import com.handbook.app.feature.home.navigation.navigateToAllCategories
 import com.handbook.app.feature.home.navigation.navigateToAllParties
+import com.handbook.app.feature.home.navigation.navigateToBackupAndRestore
 import com.handbook.app.feature.home.navigation.navigateToHome
 import com.handbook.app.feature.home.navigation.navigateToProfile
 import com.handbook.app.feature.home.navigation.navigateToSampleScreen
@@ -141,6 +143,8 @@ class HandbookAppState(
             when (navigationDrawerDestination) {
                 NavigationDrawerDestination.Parties -> navController.navigateToAllParties()
                 NavigationDrawerDestination.Category -> navController.navigateToAllCategories()
+                NavigationDrawerDestination.Bank -> navController.navigateToAllBanks()
+                NavigationDrawerDestination.BackupAndRestore -> navController.navigateToBackupAndRestore()
                 Support -> navController.navigateToSampleScreen(navigationDrawerDestination.name)
                 Settings -> navController.navigateToSettings()
             }

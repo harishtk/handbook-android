@@ -2,8 +2,8 @@ package com.handbook.app.feature.home.domain.repository
 
 import androidx.paging.PagingData
 import com.handbook.app.core.util.Result
-import com.handbook.app.feature.home.data.source.local.model.AccountEntryWithDetailsEntity
 import com.handbook.app.feature.home.domain.model.AccountEntry
+import com.handbook.app.feature.home.domain.model.Bank
 import com.handbook.app.feature.home.domain.model.AccountEntryFilters
 import com.handbook.app.feature.home.domain.model.AccountEntryWithDetails
 import com.handbook.app.feature.home.domain.model.Category
@@ -41,4 +41,15 @@ interface AccountsRepository {
     suspend fun addParty(party: Party): Result<Long>
     suspend fun updateParty(party: Party): Result<Party>
     suspend fun deleteParty(partyId: Long): Result<Unit>
+
+    /* Banks */
+    fun getBanksPagingSource(query: String): Flow<PagingData<Bank>>
+    fun getBanksStream(): Flow<List<Bank>>
+    fun getBankStream(id: Long): Flow<Bank?>
+
+    suspend fun getBank(bankId: Long): Result<Bank>
+    suspend fun addBank(bank: Bank): Result<Long>
+    suspend fun updateBank(bank: Bank): Result<Bank>
+    suspend fun deleteBank(bankId: Long): Result<Unit>
+
 }

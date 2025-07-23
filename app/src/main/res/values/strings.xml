@@ -18,9 +18,11 @@
     <string name="analytics">Analytics</string>
     <string name="parties">Parties</string>
     <string name="category">Category</string>
+    <string name="bank">Bank</string>
     <string name="support">Support</string>
     <string name="settings">Settings</string>
     <string name="search">Search</string>
+    <string name="backup_and_restore">Backup &amp; Restore</string>
 
     <string name="no_more_results_des">No more results found for your search. Please try refining your search terms.</string>
     <!-- END - Home -->

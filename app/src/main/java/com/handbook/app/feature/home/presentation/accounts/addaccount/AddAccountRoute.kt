@@ -109,6 +109,7 @@ import com.handbook.app.core.designsystem.component.TextFieldError
 import com.handbook.app.core.designsystem.component.expandable
 import com.handbook.app.core.designsystem.component.text.TextFieldState
 import com.handbook.app.core.designsystem.component.text.TextFieldStateHandler
+import com.handbook.app.feature.home.domain.model.Bank
 import com.handbook.app.feature.home.domain.model.Category
 import com.handbook.app.feature.home.domain.model.EntryType
 import com.handbook.app.feature.home.domain.model.Party
@@ -143,7 +144,8 @@ internal fun AddAccountRoute(
     viewModel: AddAccountViewModel = hiltViewModel(),
     onNextPage: () -> Unit = {},
     onSelectCategoryRequest: (selectedCategoryId: Long) -> Unit,
-    onSelectPartyRequest: (selectedPartyId: Long) -> Unit = {}
+    onSelectPartyRequest: (selectedPartyId: Long) -> Unit = {},
+    onSelectBankRequest: (bankId: Long) -> Unit = {},
 ) {
     val context = LocalContext.current
 
@@ -200,6 +202,9 @@ internal fun AddAccountRoute(
                 // context.showToast("Navigating to party: ${event.partyId}")
                 onSelectPartyRequest(event.partyId)
             }
+            is AddAccountUiEvent.NavigateToBankSelection -> {
+                onSelectBankRequest(event.bankId)
+            }
         }
     }
 
@@ -220,6 +225,12 @@ internal fun AddAccountRoute(
                 savedStateHandle?.get<Long?>("partyId")?.let { result ->
                     viewModel.accept(AddAccountUiAction.OnPartyToggle(result))
                     savedStateHandle.remove<Long>("partyId")
+                }
+
+                // Extract selected Bank Id
+                savedStateHandle?.get<Long?>("bankId")?.let { result ->
+                    viewModel.accept(AddAccountUiAction.OnBankToggle(result))
+                    savedStateHandle.remove<Long>("bankId")
                 }
             }
         }
@@ -455,6 +466,15 @@ private fun ColumnScope.AddAccountFormLayout(
                 },
                 provideFocusRequester = { displayNameFocusRequester }
             )
+
+            if (uiState.entryType == EntryType.BANK) {
+                BankInput(
+                    bank = uiState.bank,
+                    onClick = {
+                        uiAction(AddAccountUiAction.OnBankSelectRequest(uiState.bank?.id ?: 0L))
+                    }
+                )
+            }
 
             AmountInput(
                 amountState = amountState,
@@ -927,6 +947,47 @@ private fun PartyInput(
             onValueChange = {},
             readOnly = true,
             label = { Text("Party") },
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = false)
+            },
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(provideFocusRequester())
+        )
+    }
+}
+
+@Composable
+private fun BankInput(
+    modifier: Modifier = Modifier,
+    bank: Bank? = null,
+    onClick: () -> Unit,
+    provideFocusRequester: () -> FocusRequester = { FocusRequester() },
+) {
+    Column(
+        modifier
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .expandable(
+                expanded = true,
+                onExpandedChange = {
+                    onClick()
+                },
+                expandedDescription = "Show bank picker",
+                collapsedDescription = "Hide bank picker",
+                toggleDescription = "Toggle bank picker"
+            )
+    ) {
+        OutlinedTextField(
+            value = bank?.name ?: "Select bank",
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Bank") },
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = false)
             },

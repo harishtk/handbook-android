@@ -15,7 +15,7 @@ plugins {
 object Ext {
     const val versionMajor = 0 // Major
     const val versionMinor = 0 // Minor
-    const val versionPatch = 3 // Patches, updates
+    const val versionPatch = 5 // Patches, updates
     val versionClassifier: String? = null
     const val versionRevision = "revision-01"
     const val prodRevision = "rc-01"
@@ -59,15 +59,15 @@ android {
     kotlin {
         compilerOptions {
             jvmTarget = JvmTarget.JVM_17
-            freeCompilerArgs =
-                listOf(
-                    "-opt-in=kotlin.RequiresOptIn",
-                    // Enable experimental coroutines APIs, including Flow
-                    "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
-                    "-opt-in=kotlinx.coroutines.FlowPreview",
-                    "-opt-in=kotlin.Experimental",
-                    "-Xjvm-default=all-compatibility"
-                )
+            freeCompilerArgs.addAll(
+                "-opt-in=kotlin.RequiresOptIn",
+                "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
+                "-opt-in=kotlinx.coroutines.FlowPreview",
+                "-opt-in=kotlin.Experimental",
+                "-Xjvm-default=all-compatibility",
+                // Add the argument from the other block here:
+                "-XXLanguage:+PropertyParamAnnotationDefaultTargetMode"
+            )
         }
     }
     flavorDimensions.add("default")
@@ -91,9 +91,12 @@ android {
             buildConfigField("boolean", "IS_SECURED", "true")
         }
     }
-    kotlinOptions {
-        freeCompilerArgs = listOf("-XXLanguage:+PropertyParamAnnotationDefaultTargetMode")
+
+    // In your app/build.gradle.kts
+    ksp {
+        arg("room.schemaLocation", "$projectDir/schemas")
     }
+
 }
 
 dependencies {
@@ -106,11 +109,8 @@ dependencies {
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.datastore.core)
     implementation(libs.androidx.datastore.preferences)
-    implementation(libs.androidx.fragment.ktx)
     implementation(libs.androidx.metrics.performance)
-    implementation(libs.androidx.recyclerview)
     implementation(libs.androidx.security.crypto.ktx)
-    implementation(libs.androidx.swiperefreshlayout)
     implementation(libs.androidx.viewpager2)
     implementation(libs.androidx.window)
     implementation(libs.android.installreferrer)
@@ -135,12 +135,10 @@ dependencies {
     api(libs.androidx.compose.material.iconsExtended)
 
     /* Google */
-    implementation(libs.google.material)
 //    implementation(libs.google.play.core.ktx)
 //    implementation(libs.google.play.services.auth)
     implementation(libs.google.play.review.ktx)
     implementation(libs.google.play.appupdate.ktx)
-    implementation(libs.google.android.flexbox)
     /* For Sms reader */
 //    implementation(libs.google.play.services.auth.api.phone)
 
@@ -182,9 +180,6 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.hilt.work)
 
-    /* Exoplayer */
-    implementation(libs.bundles.exoplayer.all)
-
     /* Timber */
     implementation(libs.timber)
 
@@ -203,7 +198,6 @@ dependencies {
     implementation(libs.okhttp3.logging.interceptor)
 
     /* Navigation Components */
-    implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.navigation.ui.ktx)
     implementation(libs.androidx.hilt.navigation)
     implementation(libs.androidx.hilt.navigation.compose)
@@ -226,11 +220,6 @@ dependencies {
         exclude(group = "glide-parent")
     }
     ksp(libs.glide.compiler)
-
-    implementation(libs.facebook.shimmer)
-
-    /* View Pager Indicator */
-    implementation(libs.zhpanvip.viewpagerindicator)
 
     // Core library
     testImplementation(libs.junit)

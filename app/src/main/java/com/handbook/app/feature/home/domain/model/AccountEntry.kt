@@ -12,6 +12,7 @@ data class AccountEntry(
     val transactionDate: Long = Instant.now().toEpochMilli(),
     val partyId: Long? = null,
     val categoryId: Long,
+    val bankId: Long? = null,
     val createdAt: Long = Instant.now().toEpochMilli(),
     val updatedAt: Long = Instant.now().toEpochMilli()
 ) {
@@ -26,6 +27,7 @@ data class AccountEntry(
             transactionDate: Long = Instant.now().toEpochMilli(),
             partyId: Long? = null,
             categoryId: Long,
+            bankId: Long? = null,
         ) = AccountEntry(
             entryId = id,
             title = title,
@@ -35,7 +37,8 @@ data class AccountEntry(
             transactionType = transactionType,
             transactionDate = transactionDate,
             partyId = partyId,
-            categoryId = categoryId
+            categoryId = categoryId,
+            bankId = bankId,
         )
     }
 }

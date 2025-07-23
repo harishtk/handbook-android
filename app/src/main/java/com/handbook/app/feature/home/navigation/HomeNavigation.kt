@@ -8,6 +8,7 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.material3.SnackbarHostState
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -21,6 +22,10 @@ import com.handbook.app.Constant
 import com.handbook.app.SharedViewModel
 import com.handbook.app.feature.home.domain.model.TransactionType
 import com.handbook.app.feature.home.presentation.accounts.addaccount.AddAccountRoute
+import com.handbook.app.feature.home.presentation.backup.BackupRestoreRoute
+import com.handbook.app.feature.home.presentation.backup.BackupRestoreScreen
+import com.handbook.app.feature.home.presentation.bank.AllBanksRoute
+import com.handbook.app.feature.home.presentation.bank.addbank.AddBankRoute
 import com.handbook.app.feature.home.presentation.category.AllCategoriesRoute
 import com.handbook.app.feature.home.presentation.category.addcategory.AddCategoryRoute
 import com.handbook.app.feature.home.presentation.create.CreateRoute
@@ -58,9 +63,15 @@ const val CATEGORY_ID = "categoryId"
 const val allCategoriesNavigationRoute = "all_categories_route?$CATEGORY_ID={$CATEGORY_ID}&$PICKER_MODE={$PICKER_MODE}"
 const val addCategoryNavigationRoute = "add_category_route?$CATEGORY_ID={$CATEGORY_ID}"
 
+const val BANK_ID = "bankId"
+const val allBanksNavigationRoute = "all_banks_route?$BANK_ID={$BANK_ID}&$PICKER_MODE={$PICKER_MODE}"
+const val addBankNavigationRoute = "add_bank_route?$BANK_ID={$BANK_ID}"
+
 const val ACCOUNT_ENTRY_ID = "accountEntryId"
 const val ACCOUNT_ENTRY_TRANSACTION_TYPE = "transactionType"
 const val addAccountEntryNavigationRoute = "add_account_entry_route?$ACCOUNT_ENTRY_ID={$ACCOUNT_ENTRY_ID}&$ACCOUNT_ENTRY_TRANSACTION_TYPE={$ACCOUNT_ENTRY_TRANSACTION_TYPE}"
+
+const val backupAndRestoreNavigationRoute = "backup_and_restore"
 
 const val webPageNavigationRoute = "web_page_route?url={url}"
 const val settingsNavigationRoute = "settings_route"
@@ -130,6 +141,23 @@ fun NavController.navigateToAddCategory(
     this.navigate(addCategoryNavigationRoute.replace("{$CATEGORY_ID}", categoryId ?: ""), navOptions)
 }
 
+fun NavController.navigateToAllBanks(
+    bankId: Long = 0L,
+    isInPickerMode: Boolean = false,
+    navOptions: NavOptions? = null
+) {
+    this.navigate(allBanksNavigationRoute
+        .replace("{$BANK_ID}", bankId.toString())
+        .replace("{$PICKER_MODE}", isInPickerMode.toString()), navOptions)
+}
+
+fun NavController.navigateToAddBank(
+    bankId: String? = null,
+    navOptions: NavOptions? = null
+) {
+    this.navigate(addBankNavigationRoute.replace("{$BANK_ID}", bankId ?: ""), navOptions)
+}
+
 fun NavController.navigateToAddAccountEntry(
     accountEntryId: String? = null,
     transactionType: String = TransactionType.INCOME.name,
@@ -140,6 +168,12 @@ fun NavController.navigateToAddAccountEntry(
             .replace("{$ACCOUNT_ENTRY_ID}", accountEntryId ?: "")
             .replace("{$ACCOUNT_ENTRY_TRANSACTION_TYPE}", transactionType),
         navOptions)
+}
+
+fun NavController.navigateToBackupAndRestore(
+    navOptions: NavOptions? = null
+) {
+    this.navigate(backupAndRestoreNavigationRoute, navOptions)
 }
 
 fun NavController.navigateToCreate(navOptions: NavOptions? = null) {
@@ -373,8 +407,57 @@ fun NavGraphBuilder.homeGraph(
                 },
                 onSelectPartyRequest = { partyId ->
                     navController.navigateToAllParties(partyId, true)
+                },
+                onSelectBankRequest = { bankId ->
+                    navController.navigateToAllBanks(bankId, true)
                 }
             )
+        }
+
+        composable(
+            route = allBanksNavigationRoute,
+            arguments = listOf(
+                navArgument(BANK_ID) {
+                    type = NavType.LongType
+                    defaultValue = 0L
+                },
+                navArgument(PICKER_MODE) {
+                    type = NavType.BoolType
+                    defaultValue = false
+                }
+            )
+            /* TODO: add deep links and other args here */
+        ) {
+            val sharedViewModel = it.sharedViewModel<SharedViewModel>(navController)
+
+            AllBanksRoute(
+                navController = navController,
+                onNavUp = { navController.navigateUp() },
+                onAddBankRequest = { bankId ->
+                    navController.navigateToAddBank(bankId = bankId?.toString())
+                }
+            )
+        }
+
+        composable(
+            route = addBankNavigationRoute,
+            arguments = listOf(
+                navArgument(BANK_ID) {
+                    type = NavType.LongType
+                    defaultValue = 0L
+                }
+            ),
+        ) {
+            val sharedViewModel = it.sharedViewModel<SharedViewModel>(navController)
+            AddBankRoute(
+                onNextPage = { navController.navigateUp() },
+            )
+        }
+
+        composable(
+            route = backupAndRestoreNavigationRoute,
+        ) {
+            BackupRestoreRoute()
         }
 
         nestedGraphs()

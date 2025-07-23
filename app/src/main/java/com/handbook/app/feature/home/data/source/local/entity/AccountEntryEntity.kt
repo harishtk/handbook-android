@@ -23,6 +23,7 @@ object AccountEntryTable {
         const val TRANSACTION_DATE   = "transaction_date"
         const val FK_PARTY_ID        = "fk_party_id"
         const val FK_CATEGORY_ID     = "fk_category_id"
+        const val FK_BANK_ID         = "fk_bank_id"
         const val CREATED_AT         = "created_at"
         const val UPDATED_AT         = "updated_at"
     }
@@ -42,11 +43,18 @@ object AccountEntryTable {
             parentColumns = [CategoryTable.Columns.ID],
             childColumns = [AccountEntryTable.Columns.FK_CATEGORY_ID],
             onDelete = ForeignKey.RESTRICT // Don't delete entry if category is deleted, or handle it
+        ),
+        ForeignKey(
+            entity = BankEntity::class,
+            parentColumns = [BankTable.Columns.ID],
+            childColumns = [AccountEntryTable.Columns.FK_BANK_ID],
+            onDelete = ForeignKey.SET_NULL // Or RESTRICT, CASCADE as per your needs
         )
     ],
     indices = [
         Index(AccountEntryTable.Columns.FK_PARTY_ID),
         Index(AccountEntryTable.Columns.FK_CATEGORY_ID),
+        Index(AccountEntryTable.Columns.FK_BANK_ID),
         Index(AccountEntryTable.Columns.TRANSACTION_DATE),
         Index(AccountEntryTable.Columns.ENTRY_TYPE),
         Index(AccountEntryTable.Columns.TRANSACTION_TYPE)
@@ -81,6 +89,9 @@ data class AccountEntryEntity(
     @ColumnInfo(name = AccountEntryTable.Columns.FK_CATEGORY_ID)
     val categoryId: Long, // Non-null foreign key
 
+    @ColumnInfo(name = AccountEntryTable.Columns.FK_BANK_ID)
+    val bankId: Long? = null, // Nullable foreign key
+
     @ColumnInfo(name = AccountEntryTable.Columns.CREATED_AT)
     val createdAt: Long = Instant.now().toEpochMilli(),
 
@@ -99,6 +110,7 @@ fun AccountEntryEntity.toAccountEntry(): AccountEntry {
         transactionDate = transactionDate,
         partyId = partyId,
         categoryId = categoryId,
+        bankId = bankId,
         createdAt = createdAt,
         updatedAt = updatedAt
     )
@@ -118,6 +130,7 @@ fun AccountEntry.asEntity(): AccountEntryEntity {
         transactionDate = this.transactionDate,
         partyId = this.partyId,
         categoryId = this.categoryId,
+        bankId = this.bankId,
         createdAt = if (isNew) currentTime else this.createdAt,
         updatedAt = currentTime
     )
