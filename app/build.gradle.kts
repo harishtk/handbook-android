@@ -15,7 +15,7 @@ plugins {
 object Ext {
     const val versionMajor = 0 // Major
     const val versionMinor = 0 // Minor
-    const val versionPatch = 5 // Patches, updates
+    const val versionPatch = 6 // Patches, updates
     val versionClassifier: String? = null
     const val versionRevision = "revision-01"
     const val prodRevision = "rc-01"

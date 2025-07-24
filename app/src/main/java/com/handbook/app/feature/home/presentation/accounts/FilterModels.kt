@@ -25,7 +25,8 @@ data class TemporarySheetFilters(
     var entryType: EntryType? = null,             // CORRECTED
     var transactionType: TransactionType? = null, // CORRECTED
     var party: Party? = null,
-    var sortBy: SortOption? = SortOption.NEWEST_FIRST
+    var sortBy: SortOption? = SortOption.NEWEST_FIRST,
+    var isPinned: Boolean? = null,
 ) {
     fun toAccountEntryFilters(): AccountEntryFilters {
         return AccountEntryFilters(
@@ -34,7 +35,8 @@ data class TemporarySheetFilters(
             entryType = entryType,
             transactionType = transactionType,
             party = party,
-            sortBy = sortBy
+            sortBy = sortBy,
+            isPinned = isPinned
         )
     }
 
@@ -44,6 +46,7 @@ data class TemporarySheetFilters(
         if (entryType != null) i++
         if (transactionType != null) i++
         if (party != null) i++
+        if (isPinned != null) i++
         return i
     }
 
@@ -60,6 +63,7 @@ data class TemporarySheetFilters(
                 transactionType = activeFilters.transactionType,
                 sortBy = activeFilters.sortBy,
                 party = activeFilters.party,
+                isPinned = activeFilters.isPinned
             )
         }
     }

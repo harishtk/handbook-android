@@ -96,6 +96,7 @@ import com.handbook.app.feature.home.presentation.party.components.form.PhoneNum
 import com.handbook.app.feature.home.presentation.party.components.form.PhoneNumberState
 import com.handbook.app.feature.home.presentation.party.components.form.PhoneNumberStateSaver
 import com.handbook.app.showToast
+import com.handbook.app.ui.DevicePreviews
 import com.handbook.app.ui.cornerSizeMedium
 import com.handbook.app.ui.insetMedium
 import com.handbook.app.ui.insetSmall
@@ -382,12 +383,12 @@ private fun ColumnScope.AddPartyFormLayout(
                     shouldRequestFocus = false
                 }
             }
-            if (!phoneNumberState.isValid) {
-                phoneNumberState.enableShowErrors()
-                isValid = false
-                phoneNumberFocusRequester.requestFocus()
-                shouldRequestFocus = false
-            }
+//            if (!phoneNumberState.isValid) {
+//                phoneNumberState.enableShowErrors()
+//                isValid = false
+//                phoneNumberFocusRequester.requestFocus()
+//                shouldRequestFocus = false
+//            }
             if (!descriptionState.isValid) {
                 descriptionState.enableShowErrors()
                 isValid = false
@@ -527,14 +528,6 @@ private fun PhoneNumberInput(
         Text(
             text = buildAnnotatedString {
                 append("Phone Number")
-                withStyle(
-                    style = SpanStyle(
-                        baselineShift = BaselineShift(0.2f),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    append("*")
-                }
             },
             style = MaterialTheme.typography.titleMedium,
         )
@@ -817,7 +810,7 @@ private fun Footer(
     showBackground = false,
     wallpaper = Wallpapers.BLUE_DOMINATED_EXAMPLE
 )
-@ThemePreviews
+@DevicePreviews
 @Composable
 private fun AddPartyScreenPreview() {
     HandbookTheme(

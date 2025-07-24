@@ -274,7 +274,8 @@ class AddAccountViewModel @Inject constructor(
             }
 
             is AddAccountUiAction.OnCategorySelectRequest -> {
-                sendEvent(AddAccountUiEvent.NavigateToCategorySelection(action.categoryId))
+                sendEvent(AddAccountUiEvent.NavigateToCategorySelection(
+                    action.categoryId, viewModelState.value.transactionType))
             }
 
             is AddAccountUiAction.OnPartyToggle -> {
@@ -291,6 +292,14 @@ class AddAccountViewModel @Inject constructor(
 
             is AddAccountUiAction.OnBankSelectRequest -> {
                 sendEvent(AddAccountUiEvent.NavigateToBankSelection(action.bankId ?: 0L))
+            }
+
+            is AddAccountUiAction.OnPinnedChange -> {
+                viewModelState.update { state ->
+                    state.copy(
+                        isPinned = action.pinned
+                    )
+                }
             }
         }
     }
@@ -313,7 +322,7 @@ class AddAccountViewModel @Inject constructor(
         }
 
         val entry = AccountEntry.create(
-            id = viewModelState.value.accountEntryId ?: 0,
+            entryId = viewModelState.value.accountEntryId ?: 0,
             title = viewModelState.value.title,
             description = viewModelState.value.description,
             amount = viewModelState.value.amount.toDouble(),
@@ -321,7 +330,8 @@ class AddAccountViewModel @Inject constructor(
             transactionType = viewModelState.value.transactionType,
             transactionDate = viewModelState.value.transactionDate,
             partyId = viewModelState.value.partyId,
-            categoryId = viewModelState.value.categoryId
+            categoryId = viewModelState.value.categoryId,
+            isPinned = viewModelState.value.isPinned,
         )
         addAccountEntry(entry)
     }
@@ -425,6 +435,7 @@ private data class ViewModelState(
     val bank: Bank? = null,
     val categoryId: Long = 0L,
     val category: Category? = null,
+    val isPinned: Boolean = false,
 
     val errorMessage: ErrorMessage? = null,
 
@@ -448,6 +459,7 @@ private data class ViewModelState(
                 category = category,
                 bank = bank,
                 errorMessage = errorMessage,
+                isPinned = isPinned,
             )
         }
     }
@@ -464,6 +476,7 @@ sealed interface AddAccountUiState {
         val party: Party? = null,
         val category: Category? = null,
         val bank: Bank? = null,
+        val isPinned: Boolean = false,
         val errorMessage: ErrorMessage? = null,
     ) : AddAccountUiState
 
@@ -480,6 +493,7 @@ sealed interface AddAccountUiAction {
     data class OnCategoryToggle(val categoryId: Long) : AddAccountUiAction
     data class OnPartyToggle(val partyId: Long?) : AddAccountUiAction
     data class OnBankToggle(val bankId: Long?) : AddAccountUiAction
+    data class OnPinnedChange(val pinned: Boolean) : AddAccountUiAction
     data class Submit(
         val name: String,
         val description: String,
@@ -500,7 +514,7 @@ sealed interface AddAccountUiAction {
 sealed interface AddAccountUiEvent {
     data class ShowToast(val message: UiText) : AddAccountUiEvent
     data object OnNavUp : AddAccountUiEvent
-    data class NavigateToCategorySelection(val categoryId: Long) : AddAccountUiEvent
+    data class NavigateToCategorySelection(val categoryId: Long, val transactionType: TransactionType) : AddAccountUiEvent
     data class NavigateToPartySelection(val partyId: Long) : AddAccountUiEvent
     data class NavigateToBankSelection(val bankId: Long) : AddAccountUiEvent
 }

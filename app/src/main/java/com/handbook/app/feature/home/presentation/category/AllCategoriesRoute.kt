@@ -79,8 +79,10 @@ import com.handbook.app.core.designsystem.component.HandbookBackground
 import com.handbook.app.core.designsystem.component.HandbookGradientBackground
 import com.handbook.app.core.designsystem.component.ThemePreviews
 import com.handbook.app.feature.home.domain.model.Category
+import com.handbook.app.feature.home.domain.model.TransactionType
 import com.handbook.app.ui.theme.Gray60
 import com.handbook.app.ui.theme.HandbookTheme
+import com.handbook.app.ui.theme.TextSecondary
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
@@ -90,7 +92,7 @@ internal fun AllCategoriesRoute(
     navController: NavController,
     viewModel: AllCategoriesViewModel = hiltViewModel(),
     onNavUp: () -> Unit,
-    onAddCategoryRequest: (categoryId: Long?) -> Unit,
+    onAddCategoryRequest: (categoryId: Long?, transactionType: TransactionType) -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -110,23 +112,23 @@ internal fun AllCategoriesRoute(
         onAddCategoryRequest = onAddCategoryRequest,
     )
 
-    ObserverAsEvents(viewModel.uiEvent) {
-        when (it) {
+    ObserverAsEvents(viewModel.uiEvent) { event ->
+        when (event) {
             is AllCategoriesUiEvent.ShowSnack -> {
                 scope.launch {
-                    snackbarHostState.showSnackbar(it.message.asString(context))
+                    snackbarHostState.showSnackbar(event.message.asString(context))
                 }
             }
             is AllCategoriesUiEvent.ShowToast -> {
-                Toast.makeText(context, it.message.asString(context), Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, event.message.asString(context), Toast.LENGTH_SHORT).show()
             }
             is AllCategoriesUiEvent.NavigateToEditCategory -> {
                 if (isInPickerMode) {
                     navController.previousBackStackEntry?.savedStateHandle
-                        ?.set("categoryId", it.categoryId)
+                        ?.set("categoryId", event.categoryId)
                     navController.popBackStack()
                 } else {
-                    onAddCategoryRequest(it.categoryId)
+                    onAddCategoryRequest(event.categoryId, event.transactionType)
                 }
             }
         }
@@ -142,7 +144,7 @@ private fun AllCategoriesScreen(
     snackbarHostState: SnackbarHostState = SnackbarHostState(),
     listState: LazyListState = LazyListState(),
     onNavUp: () -> Unit = {},
-    onAddCategoryRequest: (categoryId: Long?) -> Unit = {},
+    onAddCategoryRequest: (categoryId: Long?, transactionType: TransactionType) -> Unit = { _, _ -> },
 ) {
     TopAppBarDefaults.pinnedScrollBehavior()
     var searchQuery by rememberSaveable { mutableStateOf("") }
@@ -169,16 +171,17 @@ private fun AllCategoriesScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { onAddCategoryRequest(null) },
+                onClick = { onAddCategoryRequest(null, TransactionType.EXPENSE) },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.onGloballyPositioned { coords ->
-                    fabSize = coords.size
-                    fabCenter = coords.localToRoot(Offset.Zero) + Offset(
-                        coords.size.width / 2f,
-                        coords.size.height / 2f
-                    )
-                }
+                modifier = Modifier
+                    .onGloballyPositioned { coords ->
+                        fabSize = coords.size
+                        fabCenter = coords.localToRoot(Offset.Zero) + Offset(
+                            coords.size.width / 2f,
+                            coords.size.height / 2f
+                        )
+                    }
                     .imePadding()
                     .systemBarsPadding()
             ) {
@@ -334,7 +337,7 @@ private fun SearchResultContent(
                     val item = lazyPagingItems[index]
                     if (item != null) {
                         CategoryItem(
-                            party = item,
+                            category = item,
                             onClick = { uiAction(AllCategoriesUiAction.OnItemClick(item)) },
                             modifier = Modifier.animateItem()
                         )
@@ -365,7 +368,7 @@ private fun SearchResultContent(
 @Composable
 private fun CategoryItem(
     modifier: Modifier = Modifier,
-    party: Category,
+    category: Category,
     onClick: () -> Unit = {}
 ) {
     Row(
@@ -384,10 +387,20 @@ private fun CategoryItem(
                 .fillMaxWidth()
                 .padding(horizontal = 8.dp)
         ) {
-            Text(
-                text = party.name,
-                style = MaterialTheme.typography.titleMedium
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = category.name,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = " • ${
+                        category.transactionType.name.lowercase()
+                            .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+                    }", // Basic title case
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary
+                )
+            }
         }
     }
 }
@@ -474,7 +487,7 @@ private fun CategoryItemPreview() {
                 )
                 Column {
                     sampleCategoriesList.forEach { party ->
-                        CategoryItem(party = party)
+                        CategoryItem(category = party)
                         HorizontalDivider()
                     }
                 }

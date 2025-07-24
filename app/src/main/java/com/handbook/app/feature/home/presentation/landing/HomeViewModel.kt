@@ -258,29 +258,28 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-
     // --- Helper Conversion Functions (Keep these as they are) ---
     private fun activeFiltersToActiveScreenFilters(accountFilters: AccountEntryFilters): AccountEntryFilters {
-        // ... implementation
         return AccountEntryFilters(
             startDate = accountFilters.startDate,
             endDate = accountFilters.endDate,
             entryType = accountFilters.entryType,
             transactionType = accountFilters.transactionType,
             party = accountFilters.party,
-            sortBy = accountFilters.sortBy ?: SortOption.NEWEST_FIRST // Assuming AccountEntryFilters.sortBy is nullable
+            sortBy = accountFilters.sortBy ?: SortOption.NEWEST_FIRST,
+            isPinned = accountFilters.isPinned,
         )
     }
 
     private fun activeScreenFiltersToAccountEntryFilters(screenFilters: AccountEntryFilters): AccountEntryFilters {
-        // ... implementation
         return AccountEntryFilters(
             startDate = screenFilters.startDate,
             endDate = screenFilters.endDate,
             entryType = screenFilters.entryType,
             transactionType = screenFilters.transactionType,
             party = screenFilters.party,
-            sortBy = screenFilters.sortBy
+            sortBy = screenFilters.sortBy,
+            isPinned = screenFilters.isPinned,
         )
     }
 

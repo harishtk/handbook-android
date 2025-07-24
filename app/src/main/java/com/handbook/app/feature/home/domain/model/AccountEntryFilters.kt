@@ -13,6 +13,7 @@ data class AccountEntryFilters(
     val startDate: Long? = null,
     val endDate: Long? = null,
     val titleQuery: String? = null,
+    val isPinned: Boolean? = null,
     val sortBy: SortOption? = SortOption.NEWEST_FIRST,
 ) {
     companion object {
@@ -28,6 +29,7 @@ data class AccountEntryFilters(
         if (startDate != null) i++
         if (endDate != null) i++
         if (titleQuery != null) i++
+        if (isPinned != null) i++
         return i
     }
 }

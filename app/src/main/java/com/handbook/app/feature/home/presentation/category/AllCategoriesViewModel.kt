@@ -8,6 +8,8 @@ import com.handbook.app.common.util.UiText
 import com.handbook.app.core.di.AiaDispatchers
 import com.handbook.app.core.di.Dispatcher
 import com.handbook.app.feature.home.domain.model.Category
+import com.handbook.app.feature.home.domain.model.CategoryFilters
+import com.handbook.app.feature.home.domain.model.TransactionType
 import com.handbook.app.feature.home.domain.repository.AccountsRepository
 import com.handbook.app.ifDebug
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,6 +20,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterIsInstance
@@ -25,6 +28,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
@@ -49,14 +53,25 @@ class AllCategoriesViewModel @Inject constructor(
     private val _actionStream = MutableSharedFlow<AllCategoriesUiAction>()
     val accept: (AllCategoriesUiAction) -> Unit
 
-    val uiState: StateFlow<CategoriesUiState> = searchQuery
-        .flatMapLatest { q ->
+    val transactionType = savedStateHandle.getStateFlow<String?>("transactionType", null)
+
+    val uiState: StateFlow<CategoriesUiState> = combine(
+        searchQuery,
+        transactionType,
+        ::Pair
+    )
+        .flatMapLatest { (q, transactionType) ->
             if (q.isNotBlank() && q.length < SEARCH_QUERY_MIN_LENGTH) {
                 flowOf<CategoriesUiState>(CategoriesUiState.EmptyResult)
             } else {
                 flowOf<CategoriesUiState>(
                     CategoriesUiState.Categories(
-                        categories = getCategories(q),
+                        categories = getCategories(
+                            CategoryFilters(
+                                query = q,
+                                transactionType = if (!(transactionType.isNullOrBlank())) TransactionType.fromString(transactionType) else null
+                            )
+                        ),
                         searchQuery = q
                     )
                 )
@@ -89,7 +104,8 @@ class AllCategoriesViewModel @Inject constructor(
     private fun onUiAction(action: AllCategoriesUiAction) {
         when (action) {
             is AllCategoriesUiAction.OnItemClick -> {
-                sendEvent(AllCategoriesUiEvent.NavigateToEditCategory(action.category.id))
+                sendEvent(AllCategoriesUiEvent.NavigateToEditCategory(
+                    action.category.id, action.category.transactionType))
             }
             is AllCategoriesUiAction.OnTypingQuery -> {
                 viewModelScope.launch { _actionStream.emit(action) }
@@ -105,8 +121,8 @@ class AllCategoriesViewModel @Inject constructor(
 
     }
 
-    private fun getCategories(query: String): Flow<PagingData<Category>> {
-        return accountsRepository.getCategoriesPagingSource(query)
+    private fun getCategories(filters: CategoryFilters): Flow<PagingData<Category>> {
+        return accountsRepository.getCategoriesPagingSource(filters)
     }
 
     private fun parseCategoriesError(t: Throwable): CategoriesUiState.Error {
@@ -130,7 +146,7 @@ sealed interface AllCategoriesUiAction {
 sealed interface AllCategoriesUiEvent {
     data class ShowToast(val message: UiText) : AllCategoriesUiEvent
     data class ShowSnack(val message: UiText) : AllCategoriesUiEvent
-    data class NavigateToEditCategory(val categoryId: Long) : AllCategoriesUiEvent
+    data class NavigateToEditCategory(val categoryId: Long, val transactionType: TransactionType) : AllCategoriesUiEvent
 }
 
 sealed interface CategoriesUiState {

@@ -5,7 +5,7 @@ import java.time.Instant
 data class Party(
     val id: Long,
     val name: String,
-    val contactNumber: String,
+    val contactNumber: String?,
     val description: String?,
     val address: String?,
     val createdAt: Long,
@@ -15,7 +15,7 @@ data class Party(
         fun create(
             id: Long = 0,
             name: String,
-            contactNumber: String,
+            contactNumber: String? = null,
             description: String? = null,
             address: String? = null,
         ) = Party(

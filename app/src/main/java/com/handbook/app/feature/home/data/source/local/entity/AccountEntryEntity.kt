@@ -21,6 +21,7 @@ object AccountEntryTable {
         const val ENTRY_TYPE         = "entry_type"
         const val TRANSACTION_TYPE   = "transaction_type"
         const val TRANSACTION_DATE   = "transaction_date"
+        const val IS_PINNED          = "is_pinned"
         const val FK_PARTY_ID        = "fk_party_id"
         const val FK_CATEGORY_ID     = "fk_category_id"
         const val FK_BANK_ID         = "fk_bank_id"
@@ -92,6 +93,9 @@ data class AccountEntryEntity(
     @ColumnInfo(name = AccountEntryTable.Columns.FK_BANK_ID)
     val bankId: Long? = null, // Nullable foreign key
 
+    @ColumnInfo(name = AccountEntryTable.Columns.IS_PINNED)
+    val isPinned: Boolean = false,
+
     @ColumnInfo(name = AccountEntryTable.Columns.CREATED_AT)
     val createdAt: Long = Instant.now().toEpochMilli(),
 
@@ -111,6 +115,7 @@ fun AccountEntryEntity.toAccountEntry(): AccountEntry {
         partyId = partyId,
         categoryId = categoryId,
         bankId = bankId,
+        isPinned = isPinned,
         createdAt = createdAt,
         updatedAt = updatedAt
     )
@@ -131,6 +136,7 @@ fun AccountEntry.asEntity(): AccountEntryEntity {
         partyId = this.partyId,
         categoryId = this.categoryId,
         bankId = this.bankId,
+        isPinned = this.isPinned,
         createdAt = if (isNew) currentTime else this.createdAt,
         updatedAt = currentTime
     )

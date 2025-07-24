@@ -1,4 +1,6 @@
-@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class,
+    ExperimentalMaterial3ExpressiveApi::class
+)
 
 package com.handbook.app.feature.home.presentation.landing
 
@@ -33,19 +35,24 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.NorthEast
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.SouthWest
 import androidx.compose.material.icons.outlined.FilterAlt
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -54,6 +61,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.ToggleButton
+import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -67,7 +76,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -104,6 +113,7 @@ import com.handbook.app.feature.home.domain.model.TransactionType
 import com.handbook.app.feature.home.domain.model.UserSummary
 import com.handbook.app.feature.home.presentation.accounts.FilterSheetContent
 import com.handbook.app.feature.home.presentation.accounts.TemporarySheetFilters
+import com.handbook.app.feature.home.presentation.accounts.addaccount.AddAccountUiAction
 import com.handbook.app.feature.home.presentation.accounts.components.ExpandableAccountEntryCard
 import com.handbook.app.feature.home.presentation.accounts.components.FabOption
 import com.handbook.app.feature.home.presentation.accounts.components.OnMainFabClickBehavior
@@ -295,6 +305,35 @@ internal fun HomeScreen(
                         }
                     },
                     actions = {
+                        val isPinned = filterUiState.temporaryFilters.isPinned == true
+
+                        ToggleButton(
+                            checked = isPinned,
+                            onCheckedChange = {
+                                filterUiAction(
+                                    FilterUiAction.UpdateTemporaryFilters(
+                                        filterUiState.temporaryFilters
+                                            .copy(isPinned = if (filterUiState.temporaryFilters.isPinned == true) null else true)
+                                    )
+                                )
+                                filterUiAction(FilterUiAction.ApplyFilters)
+                            },
+                            contentPadding = ButtonDefaults.contentPaddingFor(32.dp),
+                            shapes = ToggleButtonDefaults.shapes(
+                                shape = ToggleButtonDefaults.roundShape,
+                                checkedShape = ToggleButtonDefaults.roundShape,
+                                pressedShape = ToggleButtonDefaults.squareShape,
+                            ),
+                        ) {
+                            Icon(
+                                imageVector = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                                contentDescription = if (isPinned) "Pinned" else "Unpinned",
+                                modifier = Modifier
+                                    .size(16.dp)
+                                    .rotate(45f)
+                            )
+                        }
+
                         IconButton(onClick = {}) {
                             Icon(
                                 imageVector = HandbookIcons.MoreVert,
@@ -693,18 +732,17 @@ private fun HomeScreenPreview() {
         )
 
         val sampleEntry = AccountEntryWithDetails(
-            entry = AccountEntry(
+            entry = AccountEntry.create(
                 entryId = 2,
                 title = "Utility Bill Payment",
                 amount = 300.0,
-                transactionType = TransactionType.EXPENSE,
-                createdAt = tomorrowMillis,
-                updatedAt = tomorrowMillis,
-                transactionDate = tomorrowMillis,
-                partyId = null, // No party
-                categoryId = 2,
                 entryType = EntryType.BANK,
-                description = null // No description
+                transactionType = TransactionType.EXPENSE,
+                transactionDate = tomorrowMillis,
+                categoryId = 2,
+                createdAt = tomorrowMillis, // No party
+                updatedAt = tomorrowMillis,
+                // No description
             ),
             category = Category(
                 id = 2,
@@ -712,6 +750,7 @@ private fun HomeScreenPreview() {
                 description = null,
                 createdAt = Clock.System.now().toEpochMilliseconds(),
                 updatedAt = Clock.System.now().toEpochMilliseconds(),
+                transactionType = TransactionType.EXPENSE,
             ),
             party = null, // No party
         )

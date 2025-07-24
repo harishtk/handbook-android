@@ -6,6 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.handbook.app.feature.home.data.source.local.AccountsDatabase
 import com.handbook.app.feature.home.domain.model.Category
+import com.handbook.app.feature.home.domain.model.TransactionType
 import java.time.Instant
 
 @Entity(
@@ -25,6 +26,9 @@ data class CategoryEntity(
     @ColumnInfo(name = CategoryTable.Columns.DESCRIPTION)
     val description: String? = null,
 
+    @ColumnInfo(name = CategoryTable.Columns.TRANSACTION_TYPE)
+    val transactionType: TransactionType = TransactionType.EXPENSE,
+
     @ColumnInfo(name = CategoryTable.Columns.CREATED_AT)
     val createdAt: Long = Instant.now().toEpochMilli(),
 
@@ -37,6 +41,7 @@ fun CategoryEntity.toCategory(): Category {
         id = _id ?: 0,
         name = name,
         description = description,
+        transactionType = transactionType,
         createdAt = createdAt,
         updatedAt = updatedAt,
     )
@@ -49,8 +54,9 @@ fun Category.asEntity(): CategoryEntity {
         _id = if (isNew) null else id,
         name = name,
         description = description,
+        transactionType = transactionType,
         createdAt = if (isNew) currentTime else createdAt,
-        updatedAt = updatedAt,
+        updatedAt = updatedAt
     )
 }
 
@@ -58,10 +64,11 @@ object CategoryTable {
     const val NAME = AccountsDatabase.TABLE_CATEGORIES
 
     object Columns {
-        const val ID            = "category_id"
-        const val NAME          = "name"
-        const val DESCRIPTION   = "description"
-        const val CREATED_AT    = "created_at"
-        const val UPDATED_AT    = "updated_at"
+        const val ID                = "category_id"
+        const val NAME              = "name"
+        const val DESCRIPTION       = "description"
+        const val TRANSACTION_TYPE  = "transaction_type"
+        const val CREATED_AT        = "created_at"
+        const val UPDATED_AT        = "updated_at"
     }
 }

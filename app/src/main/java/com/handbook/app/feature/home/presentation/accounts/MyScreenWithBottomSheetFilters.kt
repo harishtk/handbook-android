@@ -2,6 +2,7 @@
 
 package com.handbook.app.feature.home.presentation.accounts // Or your screen's package
 
+import android.widget.Space
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -44,6 +46,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -67,6 +70,7 @@ import com.handbook.app.feature.home.domain.model.EntryType
 import com.handbook.app.feature.home.domain.model.Party
 import com.handbook.app.feature.home.domain.model.SortOption
 import com.handbook.app.feature.home.domain.model.TransactionType
+import com.handbook.app.feature.home.presentation.accounts.addaccount.AddAccountUiAction
 import com.handbook.app.ui.theme.HandbookTheme
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -300,6 +304,23 @@ fun FilterSheetContent(
                     }
                 )
             }
+            SheetDivider()
+
+            // --- Pinned Entry Section ---
+            SheetFilterInlinedSection(
+                title = "Show Pinned",
+            ) {
+                Switch(
+                    checked = temporaryFilters.isPinned == true,
+                    onCheckedChange = { checked ->
+                        if (checked) {
+                            onTemporaryFiltersChanged(temporaryFilters.copy(isPinned = true))
+                        } else {
+                            onTemporaryFiltersChanged(temporaryFilters.copy(isPinned = null))
+                        }
+                    },
+                )
+            }
 
             // --- Sort By Section (Example) ---
 //            SheetFilterSection(title = "Sort by", showResetButton = false) { // Sort might not need a "reset" in the same way
@@ -385,6 +406,23 @@ fun SheetFilterSection(
             }
         }
         Spacer(Modifier.height(6.dp)) // Reduced spacer
+        content()
+    }
+}
+
+@Composable
+fun SheetFilterInlinedSection(
+    title: String,
+    content: @Composable RowScope.() -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth()
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(title, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Medium) // Adjusted style
+        Spacer(Modifier.weight(1f))
         content()
     }
 }
@@ -480,9 +518,10 @@ fun EntryTypeDropdown(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TransactionTypeDropdown(
+    modifier: Modifier = Modifier,
     selectedType: TransactionType?,
     onTypeSelected: (TransactionType?) -> Unit,
-    modifier: Modifier = Modifier
+    optional: Boolean = true
 ) {
     var expanded by remember { mutableStateOf(false) }
     val items = remember { TransactionType.entries.toList() }
@@ -502,7 +541,7 @@ fun TransactionTypeDropdown(
             label = { Text("Transaction Type") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
-                .menuAnchor()
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true)
                 .fillMaxWidth(),
             shape = MaterialTheme.shapes.medium,
             textStyle = MaterialTheme.typography.bodyMedium // Compact text
@@ -511,13 +550,15 @@ fun TransactionTypeDropdown(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            DropdownMenuItem(
-                text = { Text("Any Transaction Type") },
-                onClick = {
-                    onTypeSelected(null)
-                    expanded = false
-                }
-            )
+            if (optional) {
+                DropdownMenuItem(
+                    text = { Text("Any Transaction Type") },
+                    onClick = {
+                        onTypeSelected(null)
+                        expanded = false
+                    }
+                )
+            }
             items.forEach { type ->
                 DropdownMenuItem(
                     text = { Text(type.name.replace("_", " ").replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }) },
@@ -606,7 +647,7 @@ fun SortByDropdown(selectedSortOption: SortOption, onSortOptionSelected: (SortOp
 
 
 // --- Preview ---
-@Preview(showBackground = true, heightDp = 700)
+@Preview(showBackground = true, heightDp = 800)
 @Composable
 fun MyScreenWithBottomSheetFiltersPreview() {
     var activeFilters by remember { mutableStateOf(AccountEntryFilters.None) }

@@ -9,6 +9,7 @@ import androidx.room.Query
 import androidx.room.Upsert
 import com.handbook.app.feature.home.data.source.local.entity.CategoryEntity
 import com.handbook.app.feature.home.data.source.local.entity.CategoryTable
+import com.handbook.app.feature.home.domain.model.TransactionType
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -25,10 +26,11 @@ interface CategoryDao {
         value = """
         SELECT * FROM ${CategoryTable.NAME}
         WHERE (:query = '' OR ${CategoryTable.Columns.NAME} LIKE '%' || :query || '%')
+        AND (:transactionType IS NULL OR ${CategoryTable.Columns.TRANSACTION_TYPE} = :transactionType)
         ORDER BY ${CategoryTable.Columns.CREATED_AT} DESC
     """
     )
-    fun categoriesPagingSource(query: String): PagingSource<Int, CategoryEntity>
+    fun categoriesPagingSource(query: String, transactionType: TransactionType?): PagingSource<Int, CategoryEntity>
 
     @Query(
         value = """

@@ -17,7 +17,7 @@ data class PartyEntity(
     var _id: Long? = null,
 
     @ColumnInfo(name = PartyTable.Columns.CONTACT_NUMBER)
-    val contactNumber: String,
+    val contactNumber: String? = null,
 
     @ColumnInfo(name = PartyTable.Columns.DESCRIPTION)
     var description: String? = null,

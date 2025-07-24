@@ -49,7 +49,7 @@ internal fun SimpleButtonGroup(
     onOptionSelected: (Int) -> Unit,
 ) {
     FlowRow(
-        Modifier.padding(horizontal = 8.dp).fillMaxWidth(),
+        modifier.padding(horizontal = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(2.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {

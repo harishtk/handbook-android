@@ -65,7 +65,7 @@ class AddPartyViewModel @Inject constructor(
                             state.copy(
                                 partyId = party.id,
                                 name = party.name,
-                                contact = party.contactNumber,
+                                contact = party.contactNumber ?: "",
                                 description = party.description ?: "",
                                 address = party.address ?: "",
                             )

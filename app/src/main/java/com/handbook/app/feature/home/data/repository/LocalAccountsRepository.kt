@@ -25,6 +25,7 @@ import com.handbook.app.feature.home.domain.model.AccountEntryFilters
 import com.handbook.app.feature.home.domain.model.AccountEntryWithDetails
 import com.handbook.app.feature.home.domain.model.Bank
 import com.handbook.app.feature.home.domain.model.Category
+import com.handbook.app.feature.home.domain.model.CategoryFilters
 import com.handbook.app.feature.home.domain.model.Party
 import com.handbook.app.feature.home.domain.repository.AccountsRepository
 import kotlinx.coroutines.CoroutineDispatcher
@@ -57,6 +58,7 @@ class LocalAccountsRepository @Inject constructor(
                     partyId = filters.party?.id,
                     entryType = filters.entryType?.name,
                     transactionType = filters.transactionType?.name,
+                    isPinned = filters.isPinned,
                     startDate = filters.startDate,
                     endDate = filters.endDate,
                     sortBy = filters.sortBy?.name
@@ -130,13 +132,13 @@ class LocalAccountsRepository @Inject constructor(
         }
     }
 
-    override fun getCategoriesPagingSource(query: String): Flow<PagingData<Category>> {
+    override fun getCategoriesPagingSource(filters: CategoryFilters): Flow<PagingData<Category>> {
         return Pager(
             config = PagingConfig(
                 pageSize = 20,
                 enablePlaceholders = false
             ),
-            pagingSourceFactory = { categoriesDao.categoriesPagingSource(query) }
+            pagingSourceFactory = { categoriesDao.categoriesPagingSource(filters.query, filters.transactionType) }
         ).flow
             .map { pagingData -> pagingData.map(CategoryEntity::toCategory) }
             .flowOn(dispatcher)

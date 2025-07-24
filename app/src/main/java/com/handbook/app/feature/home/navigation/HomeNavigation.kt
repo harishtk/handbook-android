@@ -60,8 +60,9 @@ const val allPartiesNavigationRoute = "all_parties_route?$PARTY_ID={$PARTY_ID}?$
 
 const val addPartyNavigationRoute = "add_party_route?$PARTY_ID={$PARTY_ID}"
 const val CATEGORY_ID = "categoryId"
-const val allCategoriesNavigationRoute = "all_categories_route?$CATEGORY_ID={$CATEGORY_ID}&$PICKER_MODE={$PICKER_MODE}"
-const val addCategoryNavigationRoute = "add_category_route?$CATEGORY_ID={$CATEGORY_ID}"
+const val TRANSACTION_TYPE = "transactionType"
+const val allCategoriesNavigationRoute = "all_categories_route?$CATEGORY_ID={$CATEGORY_ID}&$PICKER_MODE={$PICKER_MODE}?$TRANSACTION_TYPE={$TRANSACTION_TYPE}"
+const val addCategoryNavigationRoute = "add_category_route?$CATEGORY_ID={$CATEGORY_ID}?$TRANSACTION_TYPE={$TRANSACTION_TYPE}"
 
 const val BANK_ID = "bankId"
 const val allBanksNavigationRoute = "all_banks_route?$BANK_ID={$BANK_ID}&$PICKER_MODE={$PICKER_MODE}"
@@ -126,19 +127,25 @@ fun NavController.navigateToAddParty(
 
 fun NavController.navigateToAllCategories(
     categoryId: Long = 0L,
+    transactionType: String? = "",
     isInPickerMode: Boolean = false,
     navOptions: NavOptions? = null
 ) {
     this.navigate(allCategoriesNavigationRoute
         .replace("{$CATEGORY_ID}", categoryId.toString())
-        .replace("{$PICKER_MODE}", isInPickerMode.toString()), navOptions)
+        .replace("{$PICKER_MODE}", isInPickerMode.toString())
+        .replace("{$TRANSACTION_TYPE}", transactionType ?: ""), navOptions)
 }
 
 fun NavController.navigateToAddCategory(
     categoryId: String? = null,
+    transactionType: TransactionType = TransactionType.INCOME,
     navOptions: NavOptions? = null
 ) {
-    this.navigate(addCategoryNavigationRoute.replace("{$CATEGORY_ID}", categoryId ?: ""), navOptions)
+    this.navigate(addCategoryNavigationRoute
+        .replace("{$CATEGORY_ID}", categoryId ?: "")
+        .replace("{$TRANSACTION_TYPE}", transactionType.name),
+        navOptions)
 }
 
 fun NavController.navigateToAllBanks(
@@ -355,7 +362,12 @@ fun NavGraphBuilder.homeGraph(
                 navArgument(PICKER_MODE) {
                     type = NavType.BoolType
                     defaultValue = false
-                }
+                },
+                navArgument(TRANSACTION_TYPE) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
             )
             /* TODO: add deep links and other args here */
         ) {
@@ -364,8 +376,8 @@ fun NavGraphBuilder.homeGraph(
             AllCategoriesRoute(
                 navController = navController,
                 onNavUp = { navController.navigateUp() },
-                onAddCategoryRequest = { categoryId ->
-                    navController.navigateToAddCategory(categoryId = categoryId?.toString())
+                onAddCategoryRequest = { categoryId, transactionType ->
+                    navController.navigateToAddCategory(categoryId = categoryId?.toString(), transactionType = transactionType)
                 }
             )
         }
@@ -376,6 +388,10 @@ fun NavGraphBuilder.homeGraph(
                 navArgument(CATEGORY_ID) {
                     type = NavType.LongType
                     defaultValue = 0L
+                },
+                navArgument(TRANSACTION_TYPE) {
+                    type = NavType.EnumType(TransactionType::class.java)
+                    defaultValue = TransactionType.INCOME
                 }
             ),
         ) {
@@ -402,8 +418,8 @@ fun NavGraphBuilder.homeGraph(
             AddAccountRoute(
                 navController = navController,
                 onNextPage = { navController.navigateUp() },
-                onSelectCategoryRequest = { categoryId ->
-                    navController.navigateToAllCategories(categoryId, true)
+                onSelectCategoryRequest = { categoryId, transactionType ->
+                    navController.navigateToAllCategories(categoryId, transactionType = transactionType.name, true)
                 },
                 onSelectPartyRequest = { partyId ->
                     navController.navigateToAllParties(partyId, true)

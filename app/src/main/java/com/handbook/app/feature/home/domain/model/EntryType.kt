@@ -12,11 +12,7 @@ enum class EntryType {
                 "CASH" -> CASH
                 "BANK" -> BANK
                 "OTHER" -> OTHER
-                else -> {
-                    val t = IllegalStateException("Invalid EntryType: $value, selecting OTHER instead.")
-                    Timber.w(t)
-                    OTHER
-                }
+                else -> throw IllegalArgumentException("Invalid EntryType: $value")
             }
         }
     }
@@ -32,11 +28,7 @@ enum class TransactionType {
                 "INCOME" -> INCOME
                 "EXPENSE" -> EXPENSE
                 "TRANSFER" -> TRANSFER
-                else -> {
-                    val t = IllegalStateException("Invalid TransactionType: $value, selecting TRANSFER instead.")
-                    Timber.w(t)
-                    TRANSFER
-                }
+                else -> throw IllegalArgumentException("Invalid TransactionType: $value")
             }
         }
     }

@@ -18,14 +18,15 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material3.*
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
-import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -175,6 +176,22 @@ fun ExpandableAccountEntryCard(
 
                         // Updated Category and Entry Type line
                         Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (entryDetails.entry.isPinned) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Filled.PushPin,
+                                        contentDescription = "Pinned",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier
+                                            .size(16.dp)
+                                            .rotate(45f)
+                                    )
+                                    Text(
+                                        text = " • ",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            }
                             Text(
                                 text = entryDetails.category.name,
                                 style = MaterialTheme.typography.bodyMedium,
@@ -469,7 +486,7 @@ private fun ExpandedDetailsView(
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(top = 2.dp)
             )
-            party.contactNumber.let { contact ->
+            party.contactNumber?.takeIf { it.isNotBlank() }?.let { contact ->
                 Text(
                     text = "Contact: $contact",
                     style = MaterialTheme.typography.bodySmall
@@ -527,7 +544,7 @@ private fun ExpandedDetailsView(
 }
 
 @Preview(showBackground = true)
-@DevicePreviews
+// @DevicePreviews
 @Composable
 fun ExpandableAccountEntryCardPreview() {
     // Assuming HandbookTheme is your app's theme
@@ -542,17 +559,17 @@ fun ExpandableAccountEntryCardPreview() {
                     entryDetails = AccountEntryWithDetails(
                         // Use the sample data you provided
                         entry = AccountEntry(
-                            entryId = 0,
                             title = "Team Lunch at Restaurant Alpha",
+                            description = "Lunch meeting with the client. Discussed project milestones and future collaboration. Ordered various dishes including starters, main course, and desserts. Bill settled via cash payment.",
                             amount = 1250.75,
+                            entryType = EntryType.CASH,
                             transactionType = TransactionType.EXPENSE,
-                            createdAt = Clock.System.now().toEpochMilliseconds(),
-                            updatedAt = Clock.System.now().toEpochMilliseconds(),
                             transactionDate = Clock.System.now().toEpochMilliseconds(),
                             partyId = 1,
                             categoryId = 1,
-                            entryType = EntryType.CASH,
-                            description = "Lunch meeting with the client. Discussed project milestones and future collaboration. Ordered various dishes including starters, main course, and desserts. Bill settled via cash payment."
+                            createdAt = Clock.System.now().toEpochMilliseconds(),
+                            updatedAt = Clock.System.now().toEpochMilliseconds(),
+                            isPinned = false,
                         ),
                         category = Category(
                             id = 1,
@@ -560,6 +577,7 @@ fun ExpandableAccountEntryCardPreview() {
                             description = null,
                             createdAt = Clock.System.now().toEpochMilliseconds(),
                             updatedAt = Clock.System.now().toEpochMilliseconds(),
+                            transactionType = TransactionType.EXPENSE
                         ),
                         party = Party(
                             id = 1,
@@ -595,14 +613,13 @@ fun ExpandableAccountEntryCardNoPartyOrDescriptionPreview() {
                         entryId = 2,
                         title = "Utility Bill Payment",
                         amount = 300.0,
-                        transactionType = TransactionType.EXPENSE,
-                        createdAt = Clock.System.now().toEpochMilliseconds(),
-                        updatedAt = Clock.System.now().toEpochMilliseconds(),
-                        transactionDate = Clock.System.now().toEpochMilliseconds(),
-                        partyId = null, // No party
-                        categoryId = 2,
                         entryType = EntryType.BANK,
-                        description = null // No description
+                        transactionType = TransactionType.EXPENSE,
+                        transactionDate = Clock.System.now().toEpochMilliseconds(),
+                        categoryId = 2,
+                        createdAt = Clock.System.now().toEpochMilliseconds(), // No party
+                        updatedAt = Clock.System.now().toEpochMilliseconds(),
+                        isPinned = true,
                     ),
                     category = Category(
                         id = 2,
@@ -610,6 +627,7 @@ fun ExpandableAccountEntryCardNoPartyOrDescriptionPreview() {
                         description = null,
                         createdAt = Clock.System.now().toEpochMilliseconds(),
                         updatedAt = Clock.System.now().toEpochMilliseconds(),
+                        transactionType = TransactionType.EXPENSE
                     ),
                     party = null, // No party
                 )

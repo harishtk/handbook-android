@@ -5,6 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.AutoMigrationSpec
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.handbook.app.feature.home.data.source.local.converter.Converters
 import com.handbook.app.feature.home.data.source.local.dao.AccountEntryDao
@@ -23,7 +24,7 @@ import com.handbook.app.feature.home.data.source.local.entity.PartyEntity
 @Database(
     entities = [AccountEntryEntity::class, CategoryEntity::class, PartyEntity::class,
         AttachmentEntity::class, AccountEntryFtsEntity::class, BankEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 abstract class AccountsDatabase : RoomDatabase() {

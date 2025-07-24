@@ -7,6 +7,7 @@ import com.handbook.app.feature.home.domain.model.Bank
 import com.handbook.app.feature.home.domain.model.AccountEntryFilters
 import com.handbook.app.feature.home.domain.model.AccountEntryWithDetails
 import com.handbook.app.feature.home.domain.model.Category
+import com.handbook.app.feature.home.domain.model.CategoryFilters
 import com.handbook.app.feature.home.domain.model.Party
 import kotlinx.coroutines.flow.Flow
 
@@ -23,7 +24,7 @@ interface AccountsRepository {
     suspend fun deleteAccountEntry(accountEntryId: Long): Result<Unit>
 
     /* Categories */
-    fun getCategoriesPagingSource(query: String): Flow<PagingData<Category>>
+    fun getCategoriesPagingSource(filters: CategoryFilters): Flow<PagingData<Category>>
     fun getCategoriesStream(): Flow<List<Category>>
     fun getCategoryStream(id: Long): Flow<Category?>
 

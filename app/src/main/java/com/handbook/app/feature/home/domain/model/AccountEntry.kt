@@ -14,11 +14,12 @@ data class AccountEntry(
     val categoryId: Long,
     val bankId: Long? = null,
     val createdAt: Long = Instant.now().toEpochMilli(),
-    val updatedAt: Long = Instant.now().toEpochMilli()
+    val updatedAt: Long = Instant.now().toEpochMilli(),
+    val isPinned: Boolean
 ) {
     companion object {
         fun create(
-            id: Long = 0,
+            entryId: Long = 0,
             title: String,
             description: String? = null,
             amount: Double,
@@ -28,8 +29,11 @@ data class AccountEntry(
             partyId: Long? = null,
             categoryId: Long,
             bankId: Long? = null,
+            isPinned: Boolean = false,
+            createdAt: Long = Instant.now().toEpochMilli(),
+            updatedAt: Long = Instant.now().toEpochMilli(),
         ) = AccountEntry(
-            entryId = id,
+            entryId = entryId,
             title = title,
             description = description,
             amount = amount,
@@ -39,6 +43,9 @@ data class AccountEntry(
             partyId = partyId,
             categoryId = categoryId,
             bankId = bankId,
+            isPinned = isPinned,
+            createdAt = createdAt,
+            updatedAt = updatedAt
         )
     }
 }

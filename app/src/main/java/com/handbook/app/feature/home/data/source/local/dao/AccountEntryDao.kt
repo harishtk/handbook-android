@@ -43,6 +43,7 @@ interface AccountEntryDao {
     AND (:partyId IS NULL OR fk_party_id = :partyId)
     AND (:entryType IS NULL OR entry_type = :entryType)
     AND (:transactionType IS NULL OR transaction_type = :transactionType)
+    AND (:isPinned IS NULL OR is_pinned = :isPinned)
     AND (:startDate IS NULL OR transaction_date >= :startDate)
     AND (:endDate IS NULL OR transaction_date <= :endDate)
     AND (:titleQuery IS NULL OR title LIKE '%' || :titleQuery || '%')
@@ -58,6 +59,7 @@ interface AccountEntryDao {
         partyId: Long? = null,
         entryType: String? = null, // Pass enum.name or use TypeConverter
         transactionType: String? = null, // Pass enum.name or use TypeConverter
+        isPinned: Boolean? = null,
         startDate: Long? = null,
         endDate: Long? = null,
         titleQuery: String? = null,
@@ -71,6 +73,7 @@ interface AccountEntryDao {
     AND (:partyId IS NULL OR fk_party_id = :partyId)
     AND (:entryType IS NULL OR entry_type = :entryType)
     AND (:transactionType IS NULL OR transaction_type = :transactionType)
+    AND (:isPinned IS NULL OR is_pinned = :isPinned)
     AND (:startDate IS NULL OR transaction_date >= :startDate)
     AND (:endDate IS NULL OR transaction_date <= :endDate)
     AND (:titleQuery IS NULL OR title LIKE '%' || :titleQuery || '%')
@@ -86,6 +89,7 @@ interface AccountEntryDao {
         partyId: Long? = null,
         entryType: String? = null, // Pass enum.name or use TypeConverter
         transactionType: String? = null, // Pass enum.name or use TypeConverter
+        isPinned: Boolean? = null,
         startDate: Long? = null,
         endDate: Long? = null,
         titleQuery: String? = null,

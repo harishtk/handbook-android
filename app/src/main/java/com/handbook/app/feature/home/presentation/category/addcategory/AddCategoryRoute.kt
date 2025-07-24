@@ -53,7 +53,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
@@ -82,8 +81,9 @@ import com.handbook.app.core.designsystem.component.CustomConfirmDialog
 import com.handbook.app.core.designsystem.component.DialogActionType
 import com.handbook.app.core.designsystem.component.TextFieldError
 import com.handbook.app.core.designsystem.component.ThemePreviews
-import com.handbook.app.core.designsystem.component.text.TextFieldState
 import com.handbook.app.core.designsystem.component.text.TextFieldStateHandler
+import com.handbook.app.feature.home.domain.model.TransactionType
+import com.handbook.app.feature.home.presentation.accounts.TransactionTypeDropdown
 import com.handbook.app.feature.home.presentation.party.components.form.DescriptionLength
 import com.handbook.app.feature.home.presentation.party.components.form.DescriptionState
 import com.handbook.app.feature.home.presentation.party.components.form.DisplayNameLength
@@ -278,6 +278,18 @@ private fun ColumnScope.AddCategoryFormLayout(
         provideFocusRequester = { displayNameFocusRequester }
     )
 
+    TransactionTypeDropdown(
+        modifier = Modifier
+            .padding(horizontal = insetMedium, vertical = insetSmall),
+        selectedType = uiState.transactionType,
+        onTypeSelected = { selectedType ->
+            if (selectedType != null) {
+                uiAction(AddCategoryUiAction.OnTransactionTypeChanged(selectedType))
+            }
+        },
+        optional = false
+    )
+
     TextButton(
         modifier = Modifier.padding(horizontal = insetSmall),
         onClick = {
@@ -344,6 +356,7 @@ private fun ColumnScope.AddCategoryFormLayout(
                     AddCategoryUiAction.Submit(
                         name = displayNameState.text,
                         description = descriptionState.text,
+                        transactionType = uiState.transactionType
                     )
                 )
             }
@@ -574,7 +587,7 @@ private fun AddCategoryScreenPreview() {
         disableDynamicTheming = true
     ) {
         AddCategoryScreen(
-            uiState = AddCategoryUiState.AddCategoryForm("", ""),
+            uiState = AddCategoryUiState.AddCategoryForm("", "", TransactionType.EXPENSE),
             uiAction = {},
             isInEditMode = true
         )

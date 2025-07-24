@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 
 package com.handbook.app.feature.home.presentation.accounts.addaccount
 
@@ -37,14 +37,20 @@ import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.AttachMoney
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -57,6 +63,9 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.ToggleButton
+import androidx.compose.material3.ToggleButtonDefaults
+import androidx.compose.material3.ToggleButtonShapes
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
@@ -106,9 +115,12 @@ import com.handbook.app.core.designsystem.component.ConfirmBackPressDialog
 import com.handbook.app.core.designsystem.component.CustomConfirmDialog
 import com.handbook.app.core.designsystem.component.DialogActionType
 import com.handbook.app.core.designsystem.component.TextFieldError
+import com.handbook.app.core.designsystem.component.ThemePreviews
 import com.handbook.app.core.designsystem.component.expandable
 import com.handbook.app.core.designsystem.component.text.TextFieldState
 import com.handbook.app.core.designsystem.component.text.TextFieldStateHandler
+import com.handbook.app.core.designsystem.exposeBounds
+import com.handbook.app.core.designsystem.recomposeHighlighter
 import com.handbook.app.feature.home.domain.model.Bank
 import com.handbook.app.feature.home.domain.model.Category
 import com.handbook.app.feature.home.domain.model.EntryType
@@ -122,6 +134,7 @@ import com.handbook.app.feature.home.presentation.party.components.form.Descript
 import com.handbook.app.feature.home.presentation.party.components.form.DisplayNameLength
 import com.handbook.app.feature.home.presentation.party.components.form.DisplayNameState
 import com.handbook.app.showToast
+import com.handbook.app.ui.DevicePreviews
 import com.handbook.app.ui.cornerSizeMedium
 import com.handbook.app.ui.insetMedium
 import com.handbook.app.ui.insetSmall
@@ -143,7 +156,7 @@ internal fun AddAccountRoute(
     navController: NavHostController,
     viewModel: AddAccountViewModel = hiltViewModel(),
     onNextPage: () -> Unit = {},
-    onSelectCategoryRequest: (selectedCategoryId: Long) -> Unit,
+    onSelectCategoryRequest: (selectedCategoryId: Long, transactionType: TransactionType) -> Unit,
     onSelectPartyRequest: (selectedPartyId: Long) -> Unit = {},
     onSelectBankRequest: (bankId: Long) -> Unit = {},
 ) {
@@ -196,7 +209,7 @@ internal fun AddAccountRoute(
 
             is AddAccountUiEvent.NavigateToCategorySelection -> {
                 // context.showToast("Navigating to category: ${event.categoryId}")
-                onSelectCategoryRequest(event.categoryId)
+                onSelectCategoryRequest(event.categoryId, event.transactionType)
             }
             is AddAccountUiEvent.NavigateToPartySelection -> {
                 // context.showToast("Navigating to party: ${event.partyId}")
@@ -340,6 +353,7 @@ private fun AddAccountScreen(
     }
 }
 
+@ExperimentalMaterial3ExpressiveApi
 @Composable
 private fun ColumnScope.AddAccountFormLayout(
     modifier: Modifier = Modifier,
@@ -398,17 +412,50 @@ private fun ColumnScope.AddAccountFormLayout(
 
     Box {
         Column(
+            modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            EntryTypeSelector(
-                uiState = uiState,
-                onToggle = uiAction,
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                EntryTypeSelector(
+                    uiState = uiState,
+                    onToggle = uiAction,
+                    modifier = Modifier
+                        .padding(vertical = 16.dp)
+                )
+                Spacer(modifier = Modifier.weight(1f))
+
+                ToggleButton(
+                    checked = uiState.isPinned,
+                    onCheckedChange = { uiAction(AddAccountUiAction.OnPinnedChange(it)) },
+                    contentPadding = ButtonDefaults.contentPaddingFor(32.dp),
+                    shapes = ToggleButtonDefaults.shapes(
+                        shape =  ToggleButtonDefaults.roundShape,
+                        checkedShape = ToggleButtonDefaults.roundShape,
+                        pressedShape = ToggleButtonDefaults.squareShape,
+                    ),
+                ) {
+                    Icon(
+                        imageVector = if (uiState.isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                        contentDescription = if (uiState.isPinned) "Pinned" else "Unpinned",
+                        modifier = Modifier
+                            .size(16.dp)
+                            .rotate(45f)
+                    )
+                }
+            }
 
             TransactionTypeSelector(
                 uiState = uiState,
                 onToggle = uiAction,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
             )
 
             // Add a date picker and simplepicker for parties
@@ -446,11 +493,13 @@ private fun ColumnScope.AddAccountFormLayout(
                             unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
                         ),
                         modifier = Modifier
+                            .fillMaxWidth()
                     )
                 }
 
                 PartyInput(
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
                         .padding(start = 8.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
                     party = uiState.party,
                     onClick = {
@@ -494,7 +543,9 @@ private fun ColumnScope.AddAccountFormLayout(
             )
 
             TextButton(
-                modifier = Modifier.padding(horizontal = insetSmall),
+                modifier = Modifier
+                    .padding(horizontal = insetSmall)
+                    .align(Alignment.Start),
                 onClick = {
                     enableDescription = !enableDescription
                     if (!enableDescription) {
@@ -947,6 +998,7 @@ private fun PartyInput(
             onValueChange = {},
             readOnly = true,
             label = { Text("Party") },
+            singleLine = true,
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = false)
             },
@@ -1049,9 +1101,7 @@ private fun EntryTypeSelector(
     }
 
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(16.dp),
+        modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -1148,7 +1198,6 @@ private fun TransactionTypeSelector2(
     showBackground = false,
     wallpaper = Wallpapers.BLUE_DOMINATED_EXAMPLE, group = "screen"
 )
-// @ThemePreviews
 @Composable
 private fun AddAccountScreenPreview() {
     HandbookTheme(
