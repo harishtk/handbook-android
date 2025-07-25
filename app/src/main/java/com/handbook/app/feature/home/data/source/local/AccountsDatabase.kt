@@ -24,7 +24,7 @@ import com.handbook.app.feature.home.data.source.local.entity.PartyEntity
 @Database(
     entities = [AccountEntryEntity::class, CategoryEntity::class, PartyEntity::class,
         AttachmentEntity::class, AccountEntryFtsEntity::class, BankEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class AccountsDatabase : RoomDatabase() {

@@ -17,6 +17,7 @@ object Constant {
     const val MIME_TYPE_HLS_STREAM = "application/vnd.apple.mpegurl"
     const val MIME_TYPE_VIDEO = "video/*"
     const val MIME_TYPE_VIDEO_MP4 = "video/mp4"
+    const val MIME_TYPE_ANY = "*/*"
 
     /* Env */
     const val ENV_DEV = "dev"

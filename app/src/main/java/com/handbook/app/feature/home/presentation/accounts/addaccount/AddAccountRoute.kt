@@ -2,8 +2,26 @@
 
 package com.handbook.app.feature.home.presentation.accounts.addaccount
 
+import android.Manifest
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.content.pm.ResolveInfo
+import android.media.MediaMetadataRetriever
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +31,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,6 +44,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,21 +56,23 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.AttachMoney
 import androidx.compose.material.icons.outlined.PushPin
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.FilledIconToggleButton
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -65,7 +87,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.ToggleButtonDefaults
-import androidx.compose.material3.ToggleButtonShapes
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
@@ -79,19 +100,23 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.path
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
@@ -104,23 +129,36 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.Wallpapers
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import coil.request.videoFrameMillis
+import com.handbook.app.BuildConfig
+import com.handbook.app.Constant
+import com.handbook.app.Constant.MIME_TYPE_ANY
+import com.handbook.app.Constant.MIME_TYPE_JPEG
+import com.handbook.app.Constant.MIME_TYPE_VIDEO
 import com.handbook.app.ObserverAsEvents
 import com.handbook.app.R
+import com.handbook.app.common.util.StorageUtil
+import com.handbook.app.core.designsystem.HandbookIcons
 import com.handbook.app.core.designsystem.component.ConfirmBackPressDialog
 import com.handbook.app.core.designsystem.component.CustomConfirmDialog
 import com.handbook.app.core.designsystem.component.DialogActionType
 import com.handbook.app.core.designsystem.component.TextFieldError
-import com.handbook.app.core.designsystem.component.ThemePreviews
 import com.handbook.app.core.designsystem.component.expandable
-import com.handbook.app.core.designsystem.component.text.TextFieldState
+import com.handbook.app.core.designsystem.component.forms.MediaType
 import com.handbook.app.core.designsystem.component.text.TextFieldStateHandler
+import com.handbook.app.core.designsystem.dashedBorder
 import com.handbook.app.core.designsystem.exposeBounds
-import com.handbook.app.core.designsystem.recomposeHighlighter
+import com.handbook.app.feature.home.domain.model.Attachment
 import com.handbook.app.feature.home.domain.model.Bank
 import com.handbook.app.feature.home.domain.model.Category
 import com.handbook.app.feature.home.domain.model.EntryType
@@ -133,22 +171,40 @@ import com.handbook.app.feature.home.presentation.party.components.form.Descript
 import com.handbook.app.feature.home.presentation.party.components.form.DescriptionState
 import com.handbook.app.feature.home.presentation.party.components.form.DisplayNameLength
 import com.handbook.app.feature.home.presentation.party.components.form.DisplayNameState
+import com.handbook.app.ifDebug
 import com.handbook.app.showToast
-import com.handbook.app.ui.DevicePreviews
 import com.handbook.app.ui.cornerSizeMedium
+import com.handbook.app.ui.cornerSizeSmall
+import com.handbook.app.ui.defaultSpacerSize
 import com.handbook.app.ui.insetMedium
 import com.handbook.app.ui.insetSmall
 import com.handbook.app.ui.insetVerySmall
+import com.handbook.app.ui.mediumIconSize
+import com.handbook.app.ui.smallButtonHeightMax
 import com.handbook.app.ui.theme.HandbookTheme
+import com.handbook.app.ui.theme.LightGray100
+import com.handbook.app.ui.theme.LightGray200
 import com.handbook.app.ui.theme.TextSecondary
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
 import kotlinx.datetime.format.Padding
 import kotlinx.datetime.format.char
 import kotlinx.datetime.toLocalDateTime
 import timber.log.Timber
+import java.io.File
+import java.util.concurrent.TimeUnit
 import kotlin.time.ExperimentalTime
+
+internal const val MAX_IMAGES_LIMIT = 5
+internal const val MAX_VIDEOS_LIMIT = 1
+internal const val MAX_ATTACHMENTS_LIMIT = 3
+
+private val storagePermissions: Array<String> = arrayOf(
+    Manifest.permission.READ_EXTERNAL_STORAGE,
+)
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @Composable
@@ -161,12 +217,115 @@ internal fun AddAccountRoute(
     onSelectBankRequest: (bankId: Long) -> Unit = {},
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     val onNextPageLatest by rememberUpdatedState(onNextPage)
 
     var confirmBackPress by remember { mutableStateOf(false) }
     BackHandler {
         confirmBackPress = true
+    }
+
+    var pickerLauncherMediaType = remember { MediaType.Unknown }
+
+    var showDuplicatePhotosAlert by remember {
+        mutableStateOf(false to 0)
+    }
+    var showAttachmentOptionDialog by remember { mutableStateOf(false to MediaType.Unknown) }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            viewModel.getTempCaptureFile()?.let { file ->
+                val uri = FileProvider.getUriForFile(context, BuildConfig.APPLICATION_ID + ".provider", file)
+                scope.launch(Dispatchers.IO) {
+                    preProcessUris(context, viewModel, pickerLauncherMediaType, listOf(uri)) { duplicateCount ->
+                        if (duplicateCount > 0) {
+                            showDuplicatePhotosAlert = true to duplicateCount
+                        }
+                    }
+                    pickerLauncherMediaType = MediaType.Unknown
+                }
+            } ?: context.showToast("Something went wrong.")
+        }
+    }
+
+    val mediaPickerLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickMultipleVisualMedia(MAX_IMAGES_LIMIT)
+    ) { pickedUris ->
+        Timber.d("Picked Uris: $pickedUris pendingType=$pickerLauncherMediaType")
+        if (pickedUris.isNotEmpty()) {
+            scope.launch(Dispatchers.IO) {
+                preProcessUris(context, viewModel, pickerLauncherMediaType, pickedUris) { duplicateCount ->
+                    if (duplicateCount > 0) {
+                        showDuplicatePhotosAlert = true to duplicateCount
+                    }
+                }
+                pickerLauncherMediaType = MediaType.Unknown
+            }
+        }
+    }
+
+    val mediaPickerGenericLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetMultipleContents()
+    ) { pickedUris ->
+        Timber.d("Picked Uris Generic: $pickedUris pendingType=$pickerLauncherMediaType")
+        if (pickedUris.isNotEmpty()) {
+            scope.launch(Dispatchers.IO) {
+                preProcessUris(context, viewModel, pickerLauncherMediaType, pickedUris) { duplicateCount ->
+                    if (duplicateCount > 0) {
+                        showDuplicatePhotosAlert = true to duplicateCount
+                    }
+                }
+                pickerLauncherMediaType = MediaType.Unknown
+            }
+        }
+    }
+
+    /* <bool, bool> - (show rationale, openSettings) */
+    var showStoragePermissionRationale by remember {
+        mutableStateOf(false to false)
+    }
+    val storagePermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result: Map<String, Boolean> ->
+        val deniedList: List<String> = result.filter { !it.value }.map { it.key }
+        when {
+            deniedList.isNotEmpty() -> {
+                val map = deniedList.groupBy { permission ->
+                    if (ActivityCompat.shouldShowRequestPermissionRationale(context as Activity, permission)) {
+                        Constant.PERMISSION_DENIED
+                    } else {
+                        Constant.PERMISSION_PERMANENTLY_DENIED
+                    }
+                }
+                map[Constant.PERMISSION_DENIED]?.let {
+                    // context.showToast("Storage permission is required to upload photos")
+                    showStoragePermissionRationale = true to false
+                }
+                map[Constant.PERMISSION_PERMANENTLY_DENIED]?.let {
+                    // context.showToast("Storage permission is required to upload photos")
+                    showStoragePermissionRationale = true to true
+                }
+            }
+
+            else -> {
+                // TODO: Handle continuation?
+            }
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            viewModel.getTempCaptureFile()?.let { file ->
+                val uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", file)
+                cameraLauncher.launch(uri)
+                pickerLauncherMediaType = showAttachmentOptionDialog.second
+            }
+        } else {
+            showStoragePermissionRationale = true to !ActivityCompat.shouldShowRequestPermissionRationale(context as Activity, Manifest.permission.CAMERA)
+        }
     }
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -176,7 +335,14 @@ internal fun AddAccountRoute(
         uiState = uiState,
         uiAction = viewModel.accept,
         isInEditMode = editEntryId != 0L,
-        onNavUp = onNextPageLatest
+        onNavUp = onNextPageLatest,
+        launchMediaPicker = { _, type ->
+            Timber.d("Launch media picker: type=$type")
+            showAttachmentOptionDialog = true to type
+        },
+        onDeleteMedia = { _, type, uri ->
+            viewModel.deleteMedia(type, uri)
+        },
     )
 
     if (confirmBackPress) {
@@ -192,7 +358,11 @@ internal fun AddAccountRoute(
 
     LaunchedEffect(key1 = uiState) {
         if (uiState == AddAccountUiState.AddAccountSuccess) {
-            context.showToast("Entry added")
+            if (editEntryId != 0L) {
+                context.showToast("Entry updated")
+            } else {
+                context.showToast("Entry added")
+            }
             // viewModel.accept(AddAccountUiAction.Reset)
             onNextPageLatest()
         }
@@ -219,6 +389,20 @@ internal fun AddAccountRoute(
                 onSelectBankRequest(event.bankId)
             }
         }
+    }
+
+    if (showStoragePermissionRationale.first) {
+        StoragePermissionRationaleDialog(
+            openSettings = showStoragePermissionRationale.second,
+            onDismiss = { canceled ->
+                if (showStoragePermissionRationale.second && !canceled) {
+                    context.openSettings()
+                } else if (!canceled) {
+                    storagePermissionLauncher.launch(storagePermissions)
+                }
+                showStoragePermissionRationale = false to false
+            }
+        )
     }
 
     val currentNavController by rememberUpdatedState(navController)
@@ -254,6 +438,118 @@ internal fun AddAccountRoute(
             navBackStackEntry?.lifecycle?.removeObserver(observer)
         }
     }
+
+    if (showAttachmentOptionDialog.first) {
+        AttachmentOptionDialog(
+            onDismiss = { showAttachmentOptionDialog = false to MediaType.Unknown },
+            onOptionSelected = { option ->
+                when (option) {
+                    "Gallery" -> {
+                        val type = showAttachmentOptionDialog.second
+                        when (type) {
+                            MediaType.Image -> {
+                                val maxPick = viewModel.getMaxAttachments()
+                                Timber.d("Mx pick: $maxPick")
+
+                                if (ActivityResultContracts.PickVisualMedia.isPhotoPickerAvailable(context)) {
+                                    mediaPickerLauncher.launch(
+                                        PickVisualMediaRequest(
+                                            ActivityResultContracts.PickVisualMedia.SingleMimeType(MIME_TYPE_JPEG))
+                                    )
+                                    pickerLauncherMediaType = type
+                                } else {
+                                    Timber.w("No media picker available. Using generic picker.")
+                                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                                        if (!context.checkStoragePermission()) {
+                                            /* mStoragePermissionContinuation = {
+                                                 photoPickerGenericLauncher.launch(MIME_TYPE_IMAGE)
+                                             }*/
+                                            storagePermissionLauncher.launch(storagePermissions)
+                                        } else {
+                                            mediaPickerGenericLauncher.launch(MIME_TYPE_JPEG)
+                                            context?.showToast(context.getString(R.string.photo_picker_long_press_hint))
+                                            pickerLauncherMediaType = type
+                                        }
+                                    } else {
+                                        mediaPickerGenericLauncher.launch(MIME_TYPE_JPEG)
+                                        context?.showToast(context.getString(R.string.photo_picker_long_press_hint))
+                                        pickerLauncherMediaType = type
+                                    }
+                                }
+                            }
+                            MediaType.Video -> {
+                                val maxPick = viewModel.getMaxAttachments()
+                                Timber.d("Mx pick: $maxPick")
+
+                                Timber.w("No media picker available. Using generic picker.")
+                                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                                    if (!context.checkStoragePermission()) {
+                                        /* mStoragePermissionContinuation = {
+                                             photoPickerGenericLauncher.launch(MIME_TYPE_IMAGE)
+                                         }*/
+                                        storagePermissionLauncher.launch(storagePermissions)
+                                    } else {
+                                        mediaPickerGenericLauncher.launch(MIME_TYPE_VIDEO)
+                                        context?.showToast(context.getString(R.string.photo_picker_long_press_hint))
+                                        pickerLauncherMediaType = type
+                                    }
+                                } else {
+                                    mediaPickerGenericLauncher.launch(MIME_TYPE_VIDEO)
+                                    context?.showToast(context.getString(R.string.photo_picker_long_press_hint))
+                                    pickerLauncherMediaType = type
+                                }
+
+                                /*if (ActivityResultContracts.PickVisualMedia.isPhotoPickerAvailable(context)) {
+                                    mediaPickerLauncher.launch(
+                                        PickVisualMediaRequest(
+                                           ActivityResultContracts.PickVisualMedia.VideoOnly
+                                        )
+                                    )
+                                    pickerLauncherMediaType = type
+                                } else {
+
+                                }*/
+                            }
+//                MediaType.Unknown -> {
+//                    val t = IllegalStateException("Unable to proceed with media type '*'")
+//                    if (BuildConfig.DEBUG) { throw t }
+//                    else { Timber.w(t) }
+//                }
+                            else -> {
+                                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                                    if (!context.checkStoragePermission()) {
+                                        /* mStoragePermissionContinuation = {
+                                             photoPickerGenericLauncher.launch(MIME_TYPE_IMAGE)
+                                         }*/
+                                        storagePermissionLauncher.launch(storagePermissions)
+                                    } else {
+                                        mediaPickerGenericLauncher.launch(MIME_TYPE_ANY)
+                                        context?.showToast(context.getString(R.string.photo_picker_long_press_hint))
+                                        pickerLauncherMediaType = type
+                                    }
+                                } else {
+                                    mediaPickerGenericLauncher.launch(MIME_TYPE_ANY)
+                                    context?.showToast(context.getString(R.string.photo_picker_long_press_hint))
+                                    pickerLauncherMediaType = type
+                                }
+                            }
+                        }
+                    }
+                    "Camera" -> {
+                        if (!context.checkCameraPermission()) {
+                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                        } else {
+                            viewModel.getTempCaptureFile()?.let { file ->
+                                val uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", file)
+                                cameraLauncher.launch(uri)
+                            }
+                        }
+                    }
+                }
+                showAttachmentOptionDialog = false to MediaType.Unknown
+            }
+        )
+    }
 }
 
 @Composable
@@ -263,6 +559,8 @@ private fun AddAccountScreen(
     uiAction: (AddAccountUiAction) -> Unit,
     isInEditMode: Boolean = false,
     onNavUp: () -> Unit = {},
+    launchMediaPicker: (productId: Long, type: MediaType) -> Unit = { _, _ -> },
+    onDeleteMedia: (productId: Long, type: MediaType, uri: Uri) -> Unit = { _, _, _ -> },
 ) {
     val snacbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -331,7 +629,9 @@ private fun AddAccountScreen(
                         AddAccountFormLayout(
                             uiState = uiState,
                             uiAction = uiAction,
-                            isInEditMode = isInEditMode
+                            isInEditMode = isInEditMode,
+                            launchMediaPicker = launchMediaPicker,
+                            onDeleteMedia = onDeleteMedia
                         )
                     }
                 }
@@ -360,7 +660,10 @@ private fun ColumnScope.AddAccountFormLayout(
     uiState: AddAccountUiState.AddAccountForm,
     uiAction: (AddAccountUiAction) -> Unit,
     isInEditMode: Boolean = false,
+    launchMediaPicker: (productId: Long, type: MediaType) -> Unit = { _, _ -> },
+    onDeleteMedia: (productId: Long, type: MediaType, uri: Uri) -> Unit = { _, _, _ -> },
 ) {
+    val context = LocalContext.current
     val displayNameFocusRequester = remember { FocusRequester() }
     val amountFocusRequester = remember { FocusRequester() }
     val descriptionFocusRequester = remember { FocusRequester() }
@@ -396,6 +699,7 @@ private fun ColumnScope.AddAccountFormLayout(
         derivedStateOf { datePickerState.selectedDateMillis != null }
     }
     var enableDescription by remember { mutableStateOf(false) }
+    var enableAttachments by remember { mutableStateOf(BuildConfig.DEBUG) }
 
     LaunchedEffect(uiState) {
         if (displayNameState.text != uiState.title) {
@@ -408,6 +712,9 @@ private fun ColumnScope.AddAccountFormLayout(
             descriptionState.updateText(uiState.description)
             enableDescription = descriptionState.text.isNotBlank()
         }
+        enableAttachments = uiState.mediaFiles
+            .filterIsInstance<UploadPreviewUiModel.Item>()
+            .isNotEmpty()
     }
 
     Box {
@@ -567,6 +874,41 @@ private fun ColumnScope.AddAccountFormLayout(
                 )
             }
 
+            TextButton(
+                modifier = Modifier
+                    .padding(horizontal = insetSmall)
+                    .align(Alignment.Start),
+                onClick = {
+                    enableAttachments = !enableAttachments
+                    if (!enableAttachments) {
+                        // descriptionState.updateText("")
+                        // TODO: clear attachments
+                    }
+                }
+            ) {
+                if (enableAttachments) {
+                    Text("⛔ Remove attachment")
+                } else {
+                    Text("✍\uD83C\uDFFB Add attachment")
+                }
+            }
+
+            AnimatedVisibility(enableAttachments) {
+                AttachmentInput(
+                    mediaFiles = uiState.mediaFiles,
+                    onPlaceHolderClick = {
+                        launchMediaPicker(0, MediaType.Image)
+
+                                           },
+                    onDeleteClick = { uri ->
+                        onDeleteMedia(0, MediaType.Image, uri)
+                    },
+                    onItemClick = {
+                        context.openFile(it.uri, it.contentMediaType.mimeType)
+                    }
+                )
+            }
+
             uiState.errorMessage?.let { error ->
                 Row(modifier = Modifier.fillMaxWidth()) {
                     Spacer(modifier = Modifier.width(8.dp))
@@ -673,6 +1015,64 @@ private fun ColumnScope.AddAccountFormLayout(
             }
         }
     }
+}
+
+@Composable
+private fun AttachmentOptionDialog(
+    onDismiss: () -> Unit,
+    onOptionSelected: (String) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                        .clickable { onOptionSelected("Gallery") },
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FilledIconButton(
+                        onClick = { onOptionSelected("Gallery") },
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    ) {
+                        Icon(Icons.Default.Image, contentDescription = "Gallery")
+                    }
+                    Text(
+                        text = "Gallery",
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.W600),
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                        .clickable { onOptionSelected("Camera") },
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FilledIconButton(
+                        onClick = { onOptionSelected("Camera") },
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    ) {
+                        Icon(Icons.Default.Camera, contentDescription = "Camera")
+                    }
+                    Text(
+                        text = "Camera",
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.W600),
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+    )
 }
 
 @OptIn(ExperimentalTime::class)
@@ -1057,6 +1457,441 @@ private fun BankInput(
 }
 
 @Composable
+private fun AttachmentInput(
+    modifier: Modifier = Modifier,
+    mediaFiles: List<UploadPreviewUiModel> = listOf(
+        UploadPreviewUiModel.Placeholder(0)),
+    maxFiles: Int = 1,
+    onItemClick: (Attachment) -> Unit = {},
+    onPlaceHolderClick: () -> Unit = {},
+    onDeleteClick: (uri: Uri) -> Unit = {},
+    provideFocusRequester: () -> FocusRequester = { FocusRequester() },
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = insetMedium, vertical = insetSmall),
+        horizontalAlignment = Alignment.Start,
+    ) {
+        Row(
+            modifier = Modifier
+                .horizontalScroll(rememberScrollState())
+        ) {
+            mediaFiles.forEach { mediaFile ->
+                if (mediaFile is UploadPreviewUiModel.Placeholder) {
+                    AttachmentMediaPlaceHolder(
+                        onClick = onPlaceHolderClick
+                    )
+                } else if (mediaFile is UploadPreviewUiModel.Item) {
+                    AttachmentMediaRowItem(
+                        attachment = mediaFile.attachment,
+                        onDeleteClick = onDeleteClick,
+                        onClick = {
+                            onItemClick(mediaFile.attachment)
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AttachmentMediaRowItem(
+    modifier: Modifier = Modifier,
+    attachment: Attachment,
+    onClick: () -> Unit = {},
+    onDeleteClick: (uri: Uri) -> Unit = {},
+) {
+    Box(
+        modifier = modifier
+            .padding(insetSmall)
+            .widthIn(min = 80.dp, max = 150.dp)
+            .aspectRatio(0.7F)
+            .background(LightGray100)
+            .clip(shape = RoundedCornerShape(cornerSizeMedium))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (attachment.contentMediaType == MediaType.Video) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(attachment.uri)
+                    .videoFrameMillis(1_000)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "Product video",
+                contentScale = ContentScale.Crop,
+            )
+
+            Row(
+                modifier = Modifier
+                    .padding(insetSmall)
+                    .align(Alignment.BottomStart),
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                val minsUntil = TimeUnit.MILLISECONDS.toMinutes(attachment.duration)
+                val secondsUntil =
+                    attachment.duration - (TimeUnit.MINUTES.toMillis(minsUntil))
+                val time = String.format(
+                    "%02d:%02d",
+                    minsUntil,
+                    TimeUnit.MILLISECONDS.toSeconds(secondsUntil)
+                )
+
+                Text(
+                    text = time,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White,
+                    modifier = Modifier
+                        .background(
+                            color = Color.Black.copy(alpha = 0.2F),
+                            shape = RoundedCornerShape(cornerSizeSmall),
+                        ),
+                )
+                if ((attachment.height > attachment.width)
+                    && attachment.width >= 720 || BuildConfig.DEBUG) {
+                    Icon(
+                        imageVector = HandbookIcons.Hd,
+                        contentDescription = "Video quality",
+                        modifier = Modifier
+                            .width(mediumIconSize),
+                    )
+                }
+            }
+
+            IconButton(onClick = { /*TODO*/ }) {
+                Icon(
+                    imageVector = HandbookIcons.Play,
+                    contentDescription = "Video Preview",
+                    tint = Color.Black.copy(alpha = 0.5F),
+                    modifier = Modifier
+                        .size(48.dp)
+                        .shadow(elevation = 1.dp)
+                )
+            }
+        } else {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(attachment.uri)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "Product image",
+                contentScale = ContentScale.Crop,
+            )
+        }
+        Button(
+            onClick = { onDeleteClick(attachment.uri) },
+            modifier = Modifier
+                .padding(insetVerySmall)
+                .align(Alignment.TopEnd)
+                .heightIn(max = smallButtonHeightMax),
+            contentPadding = ButtonDefaults.TextButtonContentPadding,
+            colors = ButtonDefaults.textButtonColors(
+                contentColor = Color.White,
+                containerColor = Color(0x78000000),
+            )
+        ) {
+            Text(
+                text = "Remove",
+                style = MaterialTheme.typography.labelMedium
+                    .copy(fontWeight = FontWeight.W600)
+            )
+        }
+
+
+        ifDebug {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd),
+                horizontalAlignment = Alignment.End,
+            ) {
+                Text(
+                    text = "${attachment.width}x${attachment.height}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White,
+                    modifier = Modifier
+                        .padding(insetVerySmall)
+                        .background(
+                            color = Color.Black.copy(alpha = 0.2F),
+                            shape = RoundedCornerShape(cornerSizeSmall),
+                        ),
+                )
+                Text(
+                    text = "Remote File: ${attachment.uri}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White,
+                    modifier = Modifier
+                        .padding(insetVerySmall)
+                        .background(
+                            color = Color.Black.copy(alpha = 0.2F),
+                            shape = RoundedCornerShape(cornerSizeSmall),
+                        ),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AttachmentMediaPlaceHolder(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {}
+) {
+    Box(
+        modifier = modifier
+            .padding(insetSmall)
+            .widthIn(min = 80.dp, max = 150.dp)
+            .aspectRatio(0.7F)
+            .background(LightGray100)
+            .dashedBorder(
+                border = BorderStroke(1.dp, LightGray200),
+                shape = RoundedCornerShape(cornerSizeMedium),
+                on = 10.dp,
+                off = 10.dp,
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Image(
+                painter = painterResource(id = HandbookIcons.Id_PickMedia),
+                contentDescription = "Pick from gallery",
+                modifier = Modifier
+                    .width(48.dp)
+                    .aspectRatio(1F)
+            )
+            Text(
+                text = "Tap to open Gallery",
+                style = MaterialTheme.typography.labelSmall,
+                color = TextSecondary,
+            )
+        }
+    }
+}
+
+@Composable
+private fun StoragePermissionRationaleDialog(
+    openSettings: Boolean = false,
+    onDismiss: (canceled: Boolean) -> Unit = {},
+) {
+    val context = LocalContext.current
+    AlertDialog(
+        onDismissRequest = { onDismiss(true) },
+        icon = {
+            Icon(
+                painter = painterResource(id = HandbookIcons.Id_FilePermission),
+                contentDescription = "Storage Permission Required",
+                tint = Color.Unspecified,
+                modifier = Modifier
+                    .fillMaxWidth(0.2F),
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onDismiss(false)
+            }) {
+                if (openSettings) {
+                    Text(text = stringResource(id = R.string.settings))
+                } else {
+                    Text(text = stringResource(id = R.string.label_ok))
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = { onDismiss(true) },
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = TextSecondary
+                )
+            ) {
+                Text(text = stringResource(id = R.string.label_cancel))
+            }
+        },
+        title = {
+            Text(
+                text = stringResource(id = R.string.permissions_required)
+            )
+        },
+        text = {
+            Text(
+                text = stringResource(id = R.string.files_permission_des),
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Justify,
+            )
+        }
+    )
+}
+
+private fun Context.checkStoragePermission(): Boolean =
+    storagePermissions.all {
+        ContextCompat.checkSelfPermission(this, it) ==
+                PackageManager.PERMISSION_GRANTED
+    }
+
+private fun Context.checkCameraPermission(): Boolean =
+    ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) ==
+            PackageManager.PERMISSION_GRANTED
+
+private fun Context.openSettings() {
+    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    val uri: Uri = Uri.fromParts("package", packageName, null)
+    intent.data = uri
+
+    try {
+        val resolveInfo: ResolveInfo? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            packageManager.resolveActivity(
+                intent,
+                PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_ALL.toLong())
+            )
+        } else {
+            packageManager.resolveActivity(
+                intent,
+                PackageManager.MATCH_ALL
+            )
+        }
+        if (resolveInfo != null) {
+            startActivity(intent)
+        } else {
+            showToast("No apps can perform this action.")
+        }
+    } catch (e: Exception) {
+        ifDebug { Timber.e(e) }
+        showToast(getString(R.string.unable_to_perform_this_action))
+    }
+}
+
+private fun Context.openFile(uri: Uri, type: String) {
+    val intent = Intent(Intent.ACTION_VIEW)
+
+    val fileToShare: File
+    if (uri.scheme == "file") {
+        fileToShare = File(uri.path!!) // path will be like /data/user/0/com.handbook.app/files/attachments/...
+        try {
+            // Replace "com.handbook.app.provider" with the authority you defined in AndroidManifest.xml
+            val authority = "${applicationContext.packageName}.provider"
+            val contentUri = FileProvider.getUriForFile(this, authority, fileToShare)
+            intent.apply {
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                setDataAndType(contentUri, type)
+            }
+        } catch (e: IllegalArgumentException) {
+            Timber.e(e, "FileProvider URI generation failed. Check your file_paths.xml and authority.")
+            showToast("Error generating file URI for sharing.")
+            return
+        }
+    } else if (uri.scheme == "content") {
+        intent.apply {
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            setDataAndType(uri, type)
+        }
+    } else {
+        // If the URI is already a content URI or some other scheme you can handle directly
+        showToast("Cannot open this type of URI with FileProvider directly.")
+        // Or handle it differently
+        return
+    }
+
+    try {
+        val resolveInfo: ResolveInfo? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            packageManager.resolveActivity(
+                intent,
+                PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_ALL.toLong())
+            )
+        } else {
+            packageManager.resolveActivity(
+                intent,
+                PackageManager.MATCH_ALL
+            )
+        }
+        if (resolveInfo != null) {
+            startActivity(intent)
+        } else {
+            showToast("No apps can perform this action.")
+        }
+    } catch (e: Exception) {
+        ifDebug { Timber.e(e) }
+        showToast(getString(R.string.unable_to_perform_this_action))
+    }
+}
+
+private fun preProcessUris(
+    context: Context,
+    viewModel: AddAccountViewModel,
+    mediaType: MediaType,
+    pickedUris: List<Uri>,
+    onComplete: (duplicateCount: Int) -> Unit = {}
+) {
+    Timber.d("preProcessUris() called with: context = [$context], viewModel = [$viewModel], contentMediaType = [$mediaType], pickedUris = [$pickedUris], onComplete = [$onComplete]")
+    val maxPick = viewModel.getMaxAttachments()
+    viewModel.removeDuplicateMedia(
+        mediaType,
+        pickedUris.take(maxPick)
+    ) { duplicateCount, newUris ->
+        Timber.d("Duplicate result: $duplicateCount $newUris")
+        onComplete(duplicateCount)
+
+        val newPreviewModelList = mutableListOf<UploadPreviewUiModel.Item>()
+
+        val retriever = MediaMetadataRetriever()
+        newUris.forEach { uri ->
+            try {
+                val sellerMediaFile = when (mediaType) {
+                    MediaType.Video -> {
+                        retriever.setDataSource(context, uri)
+                        val thumbnail = retriever.frameAtTime
+                        val durationMillis = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+                            ?.toLongOrNull() ?: 0L
+                        Timber.d("Duration: $durationMillis")
+                        Attachment(
+                            uri = uri,
+                            entryId = 0,
+                            filePath = uri.toString(),
+                            contentMediaType = mediaType,
+                            width = thumbnail?.width ?: 0,
+                            height = thumbnail?.height ?: 0,
+                            duration = durationMillis
+                        )
+                    }
+                    MediaType.Image -> {
+                        val imageRes = StorageUtil.getImageResolution(context, uri)
+                        Attachment(
+                            uri = uri,
+                            entryId = 0,
+                            filePath = uri.toString(),
+                            contentMediaType = mediaType,
+                            width = imageRes.width,
+                            height = imageRes.height,
+                        )
+                    }
+                    else -> {
+                        Attachment(
+                            uri = uri,
+                            entryId = 0,
+                            filePath = uri.toString(),
+                            contentMediaType = mediaType,
+                            width = 0,
+                            height = 0,
+                        )
+                    }
+                }
+                newPreviewModelList.add(UploadPreviewUiModel.Item(sellerMediaFile))
+            } catch (ignore: Exception) { Timber.e(ignore) }
+        }
+        retriever.close()
+
+        Timber.d("New uris: size = ${newPreviewModelList.size}")
+        viewModel.setPickedMediaUris(
+            mediaType = mediaType,
+            newPreviewModelList = newPreviewModelList
+        )
+    }
+}
+
+@Composable
 private fun Footer(
     modifier: Modifier = Modifier,
     text: String = "Add Entry",
@@ -1205,7 +2040,8 @@ private fun AddAccountScreenPreview() {
         disableDynamicTheming = true
     ) {
         AddAccountScreen(
-            uiState = AddAccountUiState.AddAccountForm("", ""),
+            uiState = AddAccountUiState.AddAccountForm("", "", mediaFiles = listOf(
+                UploadPreviewUiModel.Placeholder(0))),
             uiAction = {},
             isInEditMode = true
         )

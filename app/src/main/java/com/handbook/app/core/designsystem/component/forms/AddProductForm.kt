@@ -70,6 +70,12 @@ import coil.request.videoFrameMillis
 import coil.request.videoFrameOption
 import com.bumptech.glide.load.resource.bitmap.CenterCrop
 import com.handbook.app.BuildConfig
+import com.handbook.app.common.util.StorageUtil.EXTENSION_GIF
+import com.handbook.app.common.util.StorageUtil.EXTENSION_JPEG
+import com.handbook.app.common.util.StorageUtil.EXTENSION_MP3
+import com.handbook.app.common.util.StorageUtil.EXTENSION_MP4
+import com.handbook.app.common.util.StorageUtil.EXTENSION_PDF
+import com.handbook.app.common.util.StorageUtil.EXTENSION_PNG
 import com.handbook.app.core.designsystem.HandbookIcons
 import com.handbook.app.core.designsystem.component.text.TextFieldState
 import com.handbook.app.core.designsystem.dashedBorder
@@ -167,7 +173,42 @@ data class SizePriceQtyDto(
 
 enum class MediaType(
     val mimeType: String
-) { Unknown("*"), Image("image/*"), Video("video/*") }
+) {
+    Unknown("*"),
+    Image("image/*"),
+    Video("video/*"),
+    Audio("audio/*"),
+    Text("text/*"),
+    Application("application/*"),
+    Pdf("application/pdf"),
+    Json("application/json"),
+    Xml("application/xml"),
+    Zip("application/zip"),
+    OctetStream("application/octet-stream"),
+    Png("image/png"),
+    Jpeg("image/jpeg"),
+    Gif("image/gif"),
+    Mp4("video/mp4"),
+    Mp3("audio/mpeg");
+
+    companion object {
+        fun fromMimeType(mimeType: String?): MediaType {
+            return entries.find { it.mimeType == mimeType } ?: Unknown
+        }
+
+        fun getFileExtension(mediaType: MediaType): String {
+            return when (mediaType) {
+                Unknown, Image, Video, Audio, Text, Application, Json, Xml, Zip, OctetStream -> ""
+                Png -> EXTENSION_PNG
+                Jpeg -> EXTENSION_JPEG
+                Gif -> EXTENSION_GIF
+                Mp4 -> EXTENSION_MP4
+                Mp3 -> EXTENSION_MP3
+                Pdf -> EXTENSION_PDF
+            }
+        }
+    }
+}
 
 data class SellerMediaFile(
     val id: Long = -1,

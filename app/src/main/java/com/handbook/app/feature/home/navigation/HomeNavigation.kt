@@ -473,7 +473,9 @@ fun NavGraphBuilder.homeGraph(
         composable(
             route = backupAndRestoreNavigationRoute,
         ) {
-            BackupRestoreRoute()
+            BackupRestoreRoute(
+                onNavUp = { navController.popBackStack() }
+            )
         }
 
         nestedGraphs()

@@ -4,6 +4,7 @@ import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
@@ -27,8 +28,11 @@ interface AccountEntryDao {
     @Query("SELECT * FROM account_entries ORDER BY transaction_date DESC")
     fun getAllAccountEntriesWithDetails(): Flow<List<AccountEntryWithDetailsEntity>>
 
-    @Upsert
-    suspend fun upsertAccountEntry(entry: AccountEntryEntity)
+    @Update
+    suspend fun upsertAccountEntry(entry: AccountEntryEntity): Int
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAccountEntry(entry: AccountEntryEntity): Long
 
     @Query("DELETE FROM account_entries WHERE entry_id = :entryId")
     suspend fun delete(entryId: Long)

@@ -55,7 +55,8 @@ import java.util.Locale
 @Composable
 fun BackupRestoreRoute(
     viewModel: BackupRestoreViewModel = hiltViewModel(),
-    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    onNavUp: () -> Unit
 ) {
     val uiState by viewModel.state.collectAsState()
     val context = LocalContext.current
@@ -113,6 +114,7 @@ fun BackupRestoreRoute(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
         onEvent = viewModel::onEvent,
+        onNavUp = onNavUp,
         onRestartApp = {
             // This is a direct way to restart. Consider if this is the best UX.
             // It might be better to show a dialog within BackupRestoreScreen first,
@@ -133,7 +135,7 @@ fun BackupRestoreScreen(
     uiState: BackupRestoreState,
     snackbarHostState: SnackbarHostState,
     onEvent: (BackupRestoreEvent) -> Unit,
-    onNavigateBack: () -> Unit = {}, // Optional: For back navigation
+    onNavUp: () -> Unit = {}, // Optional: For back navigation
     onRestartApp: () -> Unit // Callback to restart the app, passed from Route
 ) {
     Scaffold(
@@ -142,11 +144,8 @@ fun BackupRestoreScreen(
             TopAppBar(
                 title = { Text("Backup & Restore") },
                 navigationIcon = {
-                    // Assuming you might want a back button
-                    if (onNavigateBack != {}) { // Show only if a handler is provided
-                        IconButton(onClick = onNavigateBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Navigate back")
-                        }
+                    IconButton(onClick = onNavUp) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Navigate back")
                     }
                 }
             )

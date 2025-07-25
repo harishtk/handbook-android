@@ -1,13 +1,16 @@
 package com.handbook.app.feature.home.data.source.local.entity
 
+import android.net.Uri
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.handbook.app.core.designsystem.component.forms.MediaType
 import com.handbook.app.feature.home.data.source.local.AccountsDatabase
 import com.handbook.app.feature.home.domain.model.Attachment
 import java.time.Instant
+import androidx.core.net.toUri
 
 @Entity(
     tableName = AttachmentTable.NAME,
@@ -40,7 +43,7 @@ data class AttachmentEntity(
     val mimeType: String? = null,
 
     @ColumnInfo(name = AttachmentTable.Columns.UPLOADED_AT)
-    val uploadedAt: Long = Instant.now().toEpochMilli(),
+    val uploadedAt: Long? = null,
 
     @ColumnInfo(name = AttachmentTable.Columns.CREATED_AT)
     val createdAt: Long = Instant.now().toEpochMilli()
@@ -50,9 +53,22 @@ fun AttachmentEntity.toAttachment(): Attachment {
     return Attachment(
         attachmentId = attachmentId,
         entryId = entryId,
+        uri = filePath.toUri(),
         filePath = filePath,
         fileName = fileName,
-        mimeType = mimeType,
+        contentMediaType = MediaType.fromMimeType(mimeType),
+        uploadedAt = uploadedAt,
+        createdAt = createdAt,
+    )
+}
+
+fun Attachment.toAttachmentEntity(): AttachmentEntity {
+    return AttachmentEntity(
+        attachmentId = attachmentId,
+        entryId = entryId,
+        filePath = uri.toString(),
+        fileName = fileName,
+        mimeType = contentMediaType.mimeType,
         uploadedAt = uploadedAt,
         createdAt = createdAt,
     )

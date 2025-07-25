@@ -144,6 +144,60 @@ object StorageUtil {
         }
     }
 
+    @WorkerThread
+    fun saveAttachmentToFolder(context: Context, uri: Uri, outFile: File): SavedFileResult? {
+        val targetDir = File(context.filesDir, DIR_ATTACHMENTS)
+        if (!targetDir.exists()) {
+            if (!targetDir.mkdirs()) {
+                val t = IllegalStateException("Failed to create upload dir")
+                Log.w(TAG, "saveFilesToFolder", t)
+                return null
+            }
+        }
+
+        val pfd = context.contentResolver.openFileDescriptor(uri, "r")
+        if (pfd == null) {
+            val t = IllegalStateException("Unable to read uri $uri")
+            Log.w(TAG, "saveFilesToFolder", t)
+            return null
+        }
+
+        val savedFile = try {
+            Timber.d("Output file: ${outFile.absolutePath}")
+
+            runBlocking(Dispatchers.IO) {
+                val ins = FileInputStream(pfd.fileDescriptor)
+                val ous = FileOutputStream(outFile)
+                FileUtils.copy(ins, ous)
+            }
+            outFile
+            /*cr.openFileDescriptor(uri, "r").use { pfd ->
+                if (pfd != null) {
+
+                } else {
+                    return@mapNotNull null
+                }
+            }*/
+        } catch (e: IOException) {
+            Timber.e(e)
+            null
+        } finally {
+            pfd.close()
+        }
+
+        return if (savedFile != null) {
+            SavedFileResult(
+                folderName = targetDir.name,
+                savedFiles = listOf(savedFile),
+                originalFiles = listOf(uri)
+            )
+        } else {
+            val t = IllegalStateException("Unable to save the file")
+            Log.w(TAG, "saveFilesToFolder", t)
+            return null
+        }
+    }
+
     fun checkIfFolderExists(context: Context, name: String): Boolean {
         return true
     }
@@ -360,6 +414,22 @@ object StorageUtil {
         }
     }
 
+    fun getAttachmentFile(context: Context, extension: String): File? {
+        val dir = File(context.filesDir, DIR_ATTACHMENTS)
+        return try {
+            if (!dir.exists()) {
+                if (!dir.mkdirs()) {
+                    Timber.w("Attachment dir already exists")
+                }
+            }
+            // Create a file for attachment
+            File(dir, ATTACHMENT_FILE_PREFIX + System.currentTimeMillis() + extension)
+        } catch (e: IOException) {
+            Timber.e(e, "Failed to create attachment file")
+            null
+        }
+    }
+
     fun getTempFolderName(): String {
         return UPLOAD_DIR_PREFIX + System.currentTimeMillis()
     }
@@ -422,6 +492,9 @@ object StorageUtil {
     const val EXTENSION_JPEG    = ".jpg"
     const val EXTENSION_PNG     = ".png"
     const val EXTENSION_MP4     = ".mp4"
+    const val EXTENSION_GIF     = ".gif"
+    const val EXTENSION_MP3     = ".mp3"
+    const val EXTENSION_PDF     = ".pdf"
 
     const val FIRST_THUMBNAIL_FILENAME = "${THUMB_PREFIX}00$EXTENSION_JPEG"
 
@@ -443,10 +516,12 @@ object StorageUtil {
     private const val DIR_UPLOADS           = "uploads"
     private const val DIR_DOWNLOAD_CACHE    = "download_cache"
     private const val DIR_CAPTURE           = "Capture"
+    private const val DIR_ATTACHMENTS       = "attachments"
 
     private const val UPLOAD_DIR_PREFIX = "Avatar_"
     private const val PHOTO_FILE_PREFIX = "photo_"
     private const val TEMP_FILE_PREFIX = "Temp_"
+    private const val ATTACHMENT_FILE_PREFIX = "Attachment_"
 
     private const val PARENT_EXPORT_DIR_NAME = "AI Avatar"
 }

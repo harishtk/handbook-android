@@ -1,5 +1,6 @@
 package com.handbook.app.feature.home.data.repository
 
+import android.util.Log
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
@@ -8,13 +9,17 @@ import com.handbook.app.core.di.AiaDispatchers
 import com.handbook.app.core.di.Dispatcher
 import com.handbook.app.core.util.Result
 import com.handbook.app.feature.home.data.source.local.dao.AccountEntryDao
+import com.handbook.app.feature.home.data.source.local.dao.AttachmentDao
 import com.handbook.app.feature.home.data.source.local.dao.CategoryDao
 import com.handbook.app.feature.home.data.source.local.dao.BankDao
 import com.handbook.app.feature.home.data.source.local.dao.PartyDao
+import com.handbook.app.feature.home.data.source.local.entity.AttachmentEntity
 import com.handbook.app.feature.home.data.source.local.entity.BankEntity
 import com.handbook.app.feature.home.data.source.local.entity.CategoryEntity
 import com.handbook.app.feature.home.data.source.local.entity.PartyEntity
 import com.handbook.app.feature.home.data.source.local.entity.asEntity
+import com.handbook.app.feature.home.data.source.local.entity.toAttachment
+import com.handbook.app.feature.home.data.source.local.entity.toAttachmentEntity
 import com.handbook.app.feature.home.data.source.local.entity.toBank
 import com.handbook.app.feature.home.data.source.local.entity.toCategory
 import com.handbook.app.feature.home.data.source.local.entity.toParty
@@ -23,6 +28,7 @@ import com.handbook.app.feature.home.data.source.local.model.toAccountEntryWithD
 import com.handbook.app.feature.home.domain.model.AccountEntry
 import com.handbook.app.feature.home.domain.model.AccountEntryFilters
 import com.handbook.app.feature.home.domain.model.AccountEntryWithDetails
+import com.handbook.app.feature.home.domain.model.Attachment
 import com.handbook.app.feature.home.domain.model.Bank
 import com.handbook.app.feature.home.domain.model.Category
 import com.handbook.app.feature.home.domain.model.CategoryFilters
@@ -35,6 +41,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.withContext
+import timber.log.Timber
 import javax.inject.Inject
 
 class LocalAccountsRepository @Inject constructor(
@@ -42,6 +49,7 @@ class LocalAccountsRepository @Inject constructor(
     private val categoriesDao: CategoryDao,
     private val partiesDao: PartyDao,
     private val banksDao: BankDao,
+    private val attachmentsDao: AttachmentDao,
     @Dispatcher(AiaDispatchers.Io)
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : AccountsRepository {
@@ -102,19 +110,19 @@ class LocalAccountsRepository @Inject constructor(
     override suspend fun addAccountEntry(account: AccountEntry): Result<Long> {
         return withContext(dispatcher) {
             try {
-                accountsDao.upsertAccountEntry(account.asEntity())
-                Result.Success(0)
+                val id = accountsDao.insertAccountEntry(account.asEntity())
+                Result.Success(id)
             } catch (e: Exception) {
                 Result.Error(e)
             }
         }
     }
 
-    override suspend fun updateAccountEntry(account: AccountEntry): Result<AccountEntry> {
+    override suspend fun updateAccountEntry(account: AccountEntry): Result<Long> {
         return withContext(dispatcher) {
             try {
                 accountsDao.upsertAccountEntry(account.asEntity())
-                Result.Success(account)
+                Result.Success(account.entryId)
             } catch (e: Exception) {
                 Result.Error(e)
             }
@@ -342,6 +350,49 @@ class LocalAccountsRepository @Inject constructor(
         return withContext(dispatcher) {
             try {
                 banksDao.delete(bankId)
+                Result.Success(Unit)
+            } catch (e: Exception) {
+                Result.Error(e)
+            }
+        }
+    }
+
+    override suspend fun getAttachments(accountEntryId: Long): Flow<List<Attachment>> {
+        return attachmentsDao.attachmentsStreamByEntryId(entryId = accountEntryId)
+            .map { list ->
+                list.map(AttachmentEntity::toAttachment)
+            }
+            .flowOn(dispatcher)
+    }
+
+    override suspend fun addAttachments(attachments: List<Attachment>): Result<List<Long>> {
+        Timber.d("addAttachments() called with: attachments = $attachments")
+        return withContext(dispatcher) {
+            try {
+                val attachmentIds = attachmentsDao.upsertAll(attachments.map(Attachment::toAttachmentEntity))
+                Result.Success(attachmentIds)
+            } catch (e: Exception) {
+                Result.Error(e)
+            }
+        }
+    }
+
+    override suspend fun updateAttachment(attachment: Attachment): Result<Attachment> {
+        return withContext(dispatcher) {
+            try {
+                attachmentsDao.update(attachment.toAttachmentEntity())
+                Result.Success(attachment)
+            } catch (e: Exception) {
+                Result.Error(e)
+            }
+        }
+    }
+
+    override suspend fun deleteAttachments(attachmentIds: List<Long>): Result<Unit> {
+        Timber.d("deleteAttachments() called with: attachmentIds = $attachmentIds")
+        return withContext(dispatcher) {
+            try {
+                attachmentsDao.deleteByIds(attachmentIds)
                 Result.Success(Unit)
             } catch (e: Exception) {
                 Result.Error(e)

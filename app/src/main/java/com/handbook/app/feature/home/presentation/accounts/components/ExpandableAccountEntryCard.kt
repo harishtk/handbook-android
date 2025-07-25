@@ -2,6 +2,7 @@
 
 package com.handbook.app.feature.home.presentation.accounts.components
 
+import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -43,6 +45,7 @@ import androidx.compose.ui.util.lerp
 import com.handbook.app.core.designsystem.LocalWindowSizeClass
 import com.handbook.app.feature.home.domain.model.AccountEntry
 import com.handbook.app.feature.home.domain.model.AccountEntryWithDetails
+import com.handbook.app.feature.home.domain.model.Attachment
 import com.handbook.app.feature.home.domain.model.Category
 import com.handbook.app.feature.home.domain.model.EntryType
 import com.handbook.app.feature.home.domain.model.Party
@@ -204,6 +207,27 @@ fun ExpandableAccountEntryCard(
                                 }", // Basic title case
                                 style = MaterialTheme.typography.bodyMedium
                             )
+
+                            if (entryDetails.attachments.isNotEmpty()) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = " • ",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Filled.AttachFile,
+                                        contentDescription = "Attachments",
+                                        modifier = Modifier
+                                            .size(16.dp)
+                                            .rotate(45f)
+                                    )
+                                    Text(
+                                        text = "${entryDetails.attachments.size}",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+
+                            }
                         }
 
                         Text(
@@ -630,6 +654,13 @@ fun ExpandableAccountEntryCardNoPartyOrDescriptionPreview() {
                         transactionType = TransactionType.EXPENSE
                     ),
                     party = null, // No party
+                    attachments = listOf(
+                        Attachment.create(
+                            entryId = 1,
+                            uri = Uri.EMPTY,
+                            filePath = "",
+                        )
+                    )
                 )
                 ExpandableAccountEntryCard(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),

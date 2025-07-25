@@ -6,6 +6,7 @@ import com.handbook.app.feature.home.domain.model.AccountEntry
 import com.handbook.app.feature.home.domain.model.Bank
 import com.handbook.app.feature.home.domain.model.AccountEntryFilters
 import com.handbook.app.feature.home.domain.model.AccountEntryWithDetails
+import com.handbook.app.feature.home.domain.model.Attachment
 import com.handbook.app.feature.home.domain.model.Category
 import com.handbook.app.feature.home.domain.model.CategoryFilters
 import com.handbook.app.feature.home.domain.model.Party
@@ -20,7 +21,7 @@ interface AccountsRepository {
 
     suspend fun getAccountEntry(accountEntryId: Long): Result<AccountEntryWithDetails>
     suspend fun addAccountEntry(account: AccountEntry): Result<Long>
-    suspend fun updateAccountEntry(account: AccountEntry): Result<AccountEntry>
+    suspend fun updateAccountEntry(account: AccountEntry): Result<Long>
     suspend fun deleteAccountEntry(accountEntryId: Long): Result<Unit>
 
     /* Categories */
@@ -52,5 +53,12 @@ interface AccountsRepository {
     suspend fun addBank(bank: Bank): Result<Long>
     suspend fun updateBank(bank: Bank): Result<Bank>
     suspend fun deleteBank(bankId: Long): Result<Unit>
+
+    /* Attachments */
+    suspend fun getAttachments(accountEntryId: Long): Flow<List<Attachment>>
+
+    suspend fun addAttachments(attachments: List<Attachment>): Result<List<Long>>
+    suspend fun updateAttachment(attachment: Attachment): Result<Attachment>
+    suspend fun deleteAttachments(attachmentIds: List<Long>): Result<Unit>
 
 }
