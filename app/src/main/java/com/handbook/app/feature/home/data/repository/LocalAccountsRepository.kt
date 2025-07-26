@@ -1,11 +1,10 @@
 package com.handbook.app.feature.home.data.repository
 
-import android.util.Log
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
-import com.handbook.app.core.di.AiaDispatchers
+import com.handbook.app.core.di.HandbookDispatchers
 import com.handbook.app.core.di.Dispatcher
 import com.handbook.app.core.util.Result
 import com.handbook.app.feature.home.data.source.local.dao.AccountEntryDao
@@ -50,7 +49,7 @@ class LocalAccountsRepository @Inject constructor(
     private val partiesDao: PartyDao,
     private val banksDao: BankDao,
     private val attachmentsDao: AttachmentDao,
-    @Dispatcher(AiaDispatchers.Io)
+    @Dispatcher(HandbookDispatchers.Io)
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : AccountsRepository {
 

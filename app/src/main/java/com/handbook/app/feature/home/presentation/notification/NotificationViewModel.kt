@@ -7,7 +7,7 @@ import com.handbook.app.common.util.UiText
 import com.handbook.app.common.util.loadstate.LoadState
 import com.handbook.app.common.util.loadstate.LoadStates
 import com.handbook.app.common.util.loadstate.LoadType
-import com.handbook.app.core.di.AiaDispatchers
+import com.handbook.app.core.di.HandbookDispatchers
 import com.handbook.app.core.di.Dispatcher
 import com.handbook.app.core.domain.repository.UserDataRepository
 import com.handbook.app.core.util.ErrorMessage
@@ -44,7 +44,7 @@ import kotlin.coroutines.cancellation.CancellationException
 class NotificationViewModel @Inject constructor(
     private val notificationRepository: NotificationRepository,
     private val userDataRepository: UserDataRepository,
-    @param:Dispatcher(AiaDispatchers.Default) private val computationDispatcher: CoroutineDispatcher,
+    @param:Dispatcher(HandbookDispatchers.Default) private val computationDispatcher: CoroutineDispatcher,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 

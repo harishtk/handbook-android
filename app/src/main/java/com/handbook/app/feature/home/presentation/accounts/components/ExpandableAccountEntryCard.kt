@@ -116,7 +116,7 @@ fun ExpandableAccountEntryCard(
     // Disable swipe when the card is expanded
     val enableSwipe = !expanded
 
-    val date = Instant.fromEpochMilliseconds(entryDetails.entry.updatedAt)
+    val date = Instant.fromEpochMilliseconds(entryDetails.entry.createdAt)
         .toLocalDateTime(TimeZone.currentSystemDefault())
 
     SwipeToDismissBox(
@@ -434,7 +434,6 @@ private fun AmountText(entry: AccountEntry) {
     val amtColor = when (entry.transactionType) {
         TransactionType.INCOME -> DarkGreen
         TransactionType.EXPENSE -> DarkRed
-        TransactionType.TRANSFER -> MaterialTheme.colorScheme.secondary // Or a neutral color
     }
 
     Text(

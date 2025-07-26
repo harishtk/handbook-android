@@ -17,6 +17,9 @@ sealed class Result<out R> {
     data class Error(val exception: Throwable): Result<Nothing>()
     object Loading : Result<Nothing>()
 
+    public val isSuccess: Boolean get() = this is Success
+    public val isFailure: Boolean get() = this is Error
+
     override fun toString(): String {
         return when (this) {
             is Success<*>   -> "Success[data=$data]"
@@ -65,4 +68,18 @@ inline fun <T, R> Result<T>.map(transform: (value: T) -> R): Result<R> {
         is Result.Error -> this
         Result.Loading -> Result.Loading
     }
+}
+
+public inline fun <T> Result<T>.onSuccess(action: (value: T) -> Unit): Result<T> {
+    if (this is Result.Success) {
+        action(data)
+    }
+    return this
+}
+
+public inline fun <T> Result<T>.onFailure(action: (exception: Throwable) -> Unit): Result<T> {
+    if (this is Result.Error) {
+        action(exception)
+    }
+    return this
 }

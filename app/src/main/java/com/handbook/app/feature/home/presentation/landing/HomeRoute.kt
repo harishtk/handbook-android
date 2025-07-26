@@ -35,7 +35,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -43,6 +42,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.NorthEast
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.SouthWest
+import androidx.compose.material.icons.filled.Summarize
 import androidx.compose.material.icons.outlined.FilterAlt
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.AssistChip
@@ -113,7 +113,6 @@ import com.handbook.app.feature.home.domain.model.TransactionType
 import com.handbook.app.feature.home.domain.model.UserSummary
 import com.handbook.app.feature.home.presentation.accounts.FilterSheetContent
 import com.handbook.app.feature.home.presentation.accounts.TemporarySheetFilters
-import com.handbook.app.feature.home.presentation.accounts.addaccount.AddAccountUiAction
 import com.handbook.app.feature.home.presentation.accounts.components.ExpandableAccountEntryCard
 import com.handbook.app.feature.home.presentation.accounts.components.FabOption
 import com.handbook.app.feature.home.presentation.accounts.components.OnMainFabClickBehavior
@@ -145,7 +144,7 @@ internal fun HomeRoute(
     sharedViewModel: SharedViewModel,
     viewModel: HomeViewModel = hiltViewModel(),
     onAddEntryRequest: (Long, TransactionType) -> Unit,
-    onNavigateToNotifications: () -> Unit,
+    onNavigateToSummary: () -> Unit,
     onSelectPartyRequest: (selectedPartyId: Long) -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -164,7 +163,7 @@ internal fun HomeRoute(
         snackbarHostState = snackbarHostState,
         uiAction = viewModel.accept,
         onFabClick = { onAddEntryRequest(0, it) },
-        onNavigateToNotifications = onNavigateToNotifications,
+        onNavigateToSummary = onNavigateToSummary,
         onSelectPartyRequest = onSelectPartyRequest,
         onNavigationIconClick = {
             sharedViewModel.setNavigationDrawerSignal(true)
@@ -249,7 +248,7 @@ internal fun HomeScreen(
     snackbarHostState: SnackbarHostState = SnackbarHostState(),
     uiAction: (HomeUiAction) -> Unit = {},
     onFabClick: (TransactionType) -> Unit = {},
-    onNavigateToNotifications: () -> Unit = {},
+    onNavigateToSummary: () -> Unit = {},
     onSelectPartyRequest: (selectedPartyId: Long) -> Unit = {},
     onNavigationIconClick: () -> Unit,
 ) {
@@ -331,6 +330,14 @@ internal fun HomeScreen(
                                 modifier = Modifier
                                     .size(16.dp)
                                     .rotate(45f)
+                            )
+                        }
+
+                        IconButton(onClick = onNavigateToSummary) {
+                            Icon(
+                                imageVector = Icons.Default.Summarize,
+                                contentDescription = "Summarize",
+                                tint = MaterialTheme.colorScheme.onSurface,
                             )
                         }
 
@@ -574,7 +581,7 @@ private fun SearchResultContent(
                         key = lazyPagingItems.itemKey {
                             when (it) {
                                 is AccountEntryUiModel.Item -> it.accountEntryWithDetails.entry.entryId
-                                is AccountEntryUiModel.Separator -> it.date
+                                is AccountEntryUiModel.Separator -> it.text
                                 else -> "Footer"
                             }
                         },

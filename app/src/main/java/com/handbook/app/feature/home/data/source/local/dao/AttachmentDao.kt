@@ -30,6 +30,15 @@ interface AttachmentDao {
     @Query(
         value = """
         SELECT * FROM ${AttachmentTable.NAME}
+        WHERE ${AttachmentTable.Columns.ENTRY_ID} = :entryId
+        ORDER BY ${AttachmentTable.Columns.CREATED_AT} DESC
+    """
+    )
+    suspend fun getAttachmentsByEntryId(entryId: Long): List<AttachmentEntity>
+
+    @Query(
+        value = """
+        SELECT * FROM ${AttachmentTable.NAME}
         WHERE ${AttachmentTable.Columns.ID} = :id
     """
     )

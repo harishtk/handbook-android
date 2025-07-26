@@ -13,6 +13,7 @@ import com.handbook.app.feature.home.data.source.local.dao.AttachmentDao
 import com.handbook.app.feature.home.data.source.local.dao.BankDao
 import com.handbook.app.feature.home.data.source.local.dao.CategoryDao
 import com.handbook.app.feature.home.data.source.local.dao.PartyDao
+import com.handbook.app.feature.home.data.source.local.dao.SummaryDao
 import com.handbook.app.feature.home.data.source.local.entity.AccountEntryEntity
 import com.handbook.app.feature.home.data.source.local.entity.AccountEntryFtsEntity
 import com.handbook.app.feature.home.data.source.local.entity.AttachmentEntity
@@ -34,6 +35,7 @@ abstract class AccountsDatabase : RoomDatabase() {
     abstract fun partyDao(): PartyDao
     abstract fun attachmentDao(): AttachmentDao
     abstract fun bankDao(): BankDao
+    abstract fun summaryDao(): SummaryDao
 
     class Factory {
         fun createInstance(appContext: Context): AccountsDatabase =

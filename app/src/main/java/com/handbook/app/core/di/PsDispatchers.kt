@@ -5,8 +5,8 @@ import javax.inject.Qualifier
 
 @Qualifier
 @Retention(AnnotationRetention.RUNTIME)
-annotation class Dispatcher(val aiaDispatcher: AiaDispatchers)
+annotation class Dispatcher(val aiaDispatcher: HandbookDispatchers)
 
-enum class AiaDispatchers {
+enum class HandbookDispatchers {
     Default, Io, Main
 }

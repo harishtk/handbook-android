@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import com.handbook.app.common.util.UiText
-import com.handbook.app.core.di.AiaDispatchers
+import com.handbook.app.core.di.HandbookDispatchers
 import com.handbook.app.core.di.Dispatcher
 import com.handbook.app.feature.home.domain.model.Bank
 import com.handbook.app.feature.home.domain.repository.AccountsRepository
@@ -35,7 +35,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AllBanksViewModel @Inject constructor(
     private val accountsRepository: AccountsRepository,
-    @param:Dispatcher(AiaDispatchers.Default)
+    @param:Dispatcher(HandbookDispatchers.Default)
     private val computationDispatcher: CoroutineDispatcher,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {

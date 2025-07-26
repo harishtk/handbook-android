@@ -20,14 +20,13 @@ enum class EntryType {
 
 // Enum for TransactionType
 enum class TransactionType {
-    INCOME, EXPENSE, TRANSFER; // Added TRANSFER as it's common
+    INCOME, EXPENSE;
 
     companion object {
         fun fromString(value: String): TransactionType {
             return when (value) {
                 "INCOME" -> INCOME
                 "EXPENSE" -> EXPENSE
-                "TRANSFER" -> TRANSFER
                 else -> throw IllegalArgumentException("Invalid TransactionType: $value")
             }
         }

@@ -8,7 +8,6 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.material3.SnackbarHostState
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -23,7 +22,6 @@ import com.handbook.app.SharedViewModel
 import com.handbook.app.feature.home.domain.model.TransactionType
 import com.handbook.app.feature.home.presentation.accounts.addaccount.AddAccountRoute
 import com.handbook.app.feature.home.presentation.backup.BackupRestoreRoute
-import com.handbook.app.feature.home.presentation.backup.BackupRestoreScreen
 import com.handbook.app.feature.home.presentation.bank.AllBanksRoute
 import com.handbook.app.feature.home.presentation.bank.addbank.AddBankRoute
 import com.handbook.app.feature.home.presentation.category.AllCategoriesRoute
@@ -36,6 +34,7 @@ import com.handbook.app.feature.home.presentation.profile.ProfileRoute
 import com.handbook.app.feature.home.presentation.search.SearchRoute
 import com.handbook.app.feature.home.presentation.settings.SettingsRoute
 import com.handbook.app.feature.home.presentation.webview.WebPageRoute
+import com.handbook.app.feature.summary.presentation.SummaryRoute
 import com.handbook.app.hiltActivityViewModel
 import com.handbook.app.sharedViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -72,7 +71,9 @@ const val ACCOUNT_ENTRY_ID = "accountEntryId"
 const val ACCOUNT_ENTRY_TRANSACTION_TYPE = "transactionType"
 const val addAccountEntryNavigationRoute = "add_account_entry_route?$ACCOUNT_ENTRY_ID={$ACCOUNT_ENTRY_ID}&$ACCOUNT_ENTRY_TRANSACTION_TYPE={$ACCOUNT_ENTRY_TRANSACTION_TYPE}"
 
-const val backupAndRestoreNavigationRoute = "backup_and_restore"
+const val backupAndRestoreNavigationRoute = "backup_and_restore_route"
+
+const val summaryNavigationRoute = "summary_route"
 
 const val webPageNavigationRoute = "web_page_route?url={url}"
 const val settingsNavigationRoute = "settings_route"
@@ -183,6 +184,12 @@ fun NavController.navigateToBackupAndRestore(
     this.navigate(backupAndRestoreNavigationRoute, navOptions)
 }
 
+fun NavController.navigateToSummary(
+    navOptions: NavOptions? = null
+) {
+    this.navigate(summaryNavigationRoute, navOptions)
+}
+
 fun NavController.navigateToCreate(navOptions: NavOptions? = null) {
     this.navigate(createNavigationRoute, navOptions)
 }
@@ -228,8 +235,8 @@ fun NavGraphBuilder.homeScreen(
                     transactionType = transactionType.name
                 )
             },
-            onNavigateToNotifications = {
-                navController.navigateToNotifications()
+            onNavigateToSummary = {
+                navController.navigateToSummary()
             },
             onSelectPartyRequest = { partyId ->
                 navController.navigateToAllParties(partyId, true)
@@ -301,9 +308,9 @@ fun NavGraphBuilder.homeGraph(
                         transactionType = transactionType.name
                     )
                 },
-                onNavigateToNotifications = {
+                onNavigateToSummary = {
                     // navController.navigateToNotifications()
-                    navController.navigateToAllParties()
+                    navController.navigateToSummary()
                 },
                 onSelectPartyRequest = { partyId ->
                     navController.navigateToAllParties(partyId, true)
@@ -478,6 +485,13 @@ fun NavGraphBuilder.homeGraph(
             )
         }
 
+        composable(
+            route = summaryNavigationRoute,
+        ) {
+            SummaryRoute(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
         nestedGraphs()
     }
 }

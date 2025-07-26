@@ -1,9 +1,11 @@
 package com.handbook.app.feature.home.domain.di
 
 import android.content.Context
+import com.handbook.app.feature.home.data.repository.LocalSummaryRepository
 import com.handbook.app.feature.home.data.repository.LocalAccountsRepository
 import com.handbook.app.feature.home.data.source.local.AccountsDatabase
 import com.handbook.app.feature.home.domain.repository.AccountsRepository
+import com.handbook.app.feature.home.domain.repository.SummaryRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -21,6 +23,12 @@ interface DatabaseModule {
     fun bindsAccountsRepository(
         accountsRepository: LocalAccountsRepository
     ): AccountsRepository
+
+    @Binds
+    @Singleton
+    fun bindsSummaryRepository(
+        summaryRepository: LocalSummaryRepository
+    ): SummaryRepository
 
     companion object {
         @Provides
@@ -54,5 +62,10 @@ interface DatabaseModule {
         fun provideBankDao(
             database: AccountsDatabase
         ) = database.bankDao()
+
+        @Provides
+        fun provideSummaryDao(
+            database: AccountsDatabase
+        ) = database.summaryDao()
     }
 }

@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import com.handbook.app.common.util.UiText
-import com.handbook.app.core.di.AiaDispatchers
+import com.handbook.app.core.di.HandbookDispatchers
 import com.handbook.app.core.di.Dispatcher
 import com.handbook.app.feature.home.domain.model.Category
 import com.handbook.app.feature.home.domain.model.CategoryFilters
@@ -28,7 +28,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
@@ -39,7 +38,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AllCategoriesViewModel @Inject constructor(
     private val accountsRepository: AccountsRepository,
-    @param:Dispatcher(AiaDispatchers.Default)
+    @param:Dispatcher(HandbookDispatchers.Default)
     private val computationDispatcher: CoroutineDispatcher,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {

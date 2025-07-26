@@ -712,6 +712,9 @@ private fun ColumnScope.AddAccountFormLayout(
             descriptionState.updateText(uiState.description)
             enableDescription = descriptionState.text.isNotBlank()
         }
+        if (uiState.transactionDate != selectedDateMillis) {
+            selectedDateMillis = uiState.transactionDate
+        }
         enableAttachments = uiState.mediaFiles
             .filterIsInstance<UploadPreviewUiModel.Item>()
             .isNotEmpty()
@@ -989,6 +992,7 @@ private fun ColumnScope.AddAccountFormLayout(
                         onClick = {
                             selectedDateMillis = datePickerState.selectedDateMillis ?: System.currentTimeMillis()
                             showDatePickerDialog = false
+                            uiAction(AddAccountUiAction.OnDatePicked(selectedDateMillis))
                         },
                         enabled = confirmEnabled // Enable button only if a date is selected
                     ) {
@@ -2085,22 +2089,6 @@ private fun TransactionTypeView(
                 Text(text = transactionType.name)
             }
         }
-
-        TransactionType.TRANSFER -> {
-            Row(
-                modifier = modifier,
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.outline_currency_exchange_24),
-                    contentDescription = "Transfer",
-                    tint = Color.Blue,
-                    modifier = Modifier.size(16.dp)
-                )
-                Text(text = transactionType.name)
-            }
-        }
     }
 }
 
@@ -2197,7 +2185,6 @@ private fun TransactionTypeViewPreview() {
         ) {
             TransactionTypeView(Modifier.fillMaxWidth(), transactionType = TransactionType.INCOME)
             TransactionTypeView(Modifier.fillMaxWidth(), transactionType = TransactionType.EXPENSE)
-            TransactionTypeView(Modifier.fillMaxWidth(), transactionType = TransactionType.TRANSFER)
 
             Spacer(Modifier.height(16.dp))
 
