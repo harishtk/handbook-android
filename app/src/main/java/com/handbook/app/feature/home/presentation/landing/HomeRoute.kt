@@ -25,11 +25,11 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -581,7 +581,7 @@ private fun SearchResultContent(
                         key = lazyPagingItems.itemKey {
                             when (it) {
                                 is AccountEntryUiModel.Item -> it.accountEntryWithDetails.entry.entryId
-                                is AccountEntryUiModel.Separator -> it.text
+                                is AccountEntryUiModel.Separator -> it.date.second
                                 else -> "Footer"
                             }
                         },
@@ -767,7 +767,7 @@ private fun HomeScreenPreview() {
                 .map(AccountEntryUiModel::Item)
                 .insertSeparators { before, after ->
                     if (before == null) {
-                        return@insertSeparators AccountEntryUiModel.Separator("Today", today.date)
+                        return@insertSeparators AccountEntryUiModel.Separator("Today", today)
                     } else {
                         return@insertSeparators null
                     }

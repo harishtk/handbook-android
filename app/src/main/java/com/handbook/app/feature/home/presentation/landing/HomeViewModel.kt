@@ -296,10 +296,11 @@ class HomeViewModel @Inject constructor(
 
         // Only consider inserting a separator if 'after' is an actual data item
         val afterItem = after as? AccountEntryUiModel.Item ?: return null
-        val afterDate = afterItem.accountEntryWithDetails.entry.createdAt.toLocalDateTime().date
+        val afterDateTime = afterItem.accountEntryWithDetails.entry.createdAt.toLocalDateTime()
+        val afterDate = afterDateTime.date
 
         if (before == null) { // We're at the beginning of the list
-            return AccountEntryUiModel.Separator("Today", today.date)
+            return AccountEntryUiModel.Separator("Today", today)
         }
 
         // Only consider inserting a separator if 'before' was also an actual data item
@@ -311,7 +312,7 @@ class HomeViewModel @Inject constructor(
             val format = LocalDate.Format { day(); char('-'); monthNumber(); char('-'); year() }
             // The date of the 'after' item is different from the 'before' item.
             // The text for this separator is based on the date of the 'after' item.
-            AccountEntryUiModel.Separator(afterDate.format(format), afterDate)
+            AccountEntryUiModel.Separator(afterDate.format(format), afterDateTime)
         } else {
             // Dates are the same, no separator needed between these two items
             null
@@ -346,7 +347,7 @@ sealed interface AccountEntryUiState {
 
 sealed interface AccountEntryUiModel {
     data class Item(val accountEntryWithDetails: AccountEntryWithDetails) : AccountEntryUiModel
-    data class Separator(val text: String, val date: LocalDate) : AccountEntryUiModel
+    data class Separator(val text: String, val date: LocalDateTime) : AccountEntryUiModel
     data class Footer(val uiText: UiText) : AccountEntryUiModel
 }
 
